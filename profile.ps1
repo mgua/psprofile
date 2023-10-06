@@ -24,11 +24,17 @@ function Admin-Run-HostEdit {
 	
 }
 
-
+function Alias-cdh {
+	# cd to home directory
+	Set-Location -Path $env:USERPROFILE
+} 
 
 Set-Alias vi Launch-Nvim
 Set-Alias npp Launch-NotepadPlusPlus
 Set-Alias aeh Admin-Edit-Hosts
 Set-Alias he Admin-Run-Hostedit
+Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
+
+
 
 
