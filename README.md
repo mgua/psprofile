@@ -13,11 +13,13 @@ Open a powershell prompt and, from your home folder, execute the following comma
     cd psprofile
     git clone https://github.com/mgua/psprofile.git
     . .\profile.ps1
+    pinstall
 ```
 
 Check the code for the defined aliases, and define yours
-once done, put your profile.ps1 in your Documents folder
-and it will be automatically loaded by powershell once you open a prompt
+once done, pinstall command will give you the command to put your profile.ps1 
+in your Documents folder and then it will be automatically loaded by powershell 
+once you open a prompt
 
 
 
