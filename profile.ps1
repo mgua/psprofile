@@ -18,24 +18,45 @@
 #
 # see https://stackoverflow.com/questions/24914589/how-to-create-permanent-powershell-aliases
 #
+# check last access time of a folder/file
+# Get-ChildItem | Where-Object {$_.psiscontainer} | ForEach-Object {“{0}`t{1}” -f $_.name,$_.lastaccesstime}
+#
 
 function Launch-Nvim {
-	& nvim.exe
+	$command = "`"c:\program files\Neovim\bin\nvim.exe`""
+	$parameters = $args -join ' '
+		if ($parameters) {
+			Start-Process -FilePath $command -ArgumentList $parameters
+		} else {
+			Start-Process -FilePath $command
+		}
 }
 
 function Launch-NotepadPlusPlus {
-	& "c:\program files\notepad++\notepad++.exe"
+	$command = "`"c:\program files\notepad++\notepad++.exe`""
+	$parameters = $args -join ' '
+		if ($parameters) {
+			Start-Process -FilePath $command -ArgumentList $parameters
+		} else {
+			Start-Process -FilePath $command
+		}
 }
 
 function Admin-Edit-Hosts {
 	# edit c:\windows\system32\drivers\etc\hosts from admin mode
-	# Start-Process -FilePath "c:\program files\notepad++\notepad++.exe" -ArgumentList "c:\windows\system32\drivers\etc\hosts" -Verb RunAs
-	Start-Process -FilePath "c:\program files\notepad++\notepad++.exe" -ArgumentList "c:\windows\system32\drivers\etc\hosts"
+	$command = "`"c:\program files\notepad++\notepad++.exe`""
+	$parameters = "c:\windows\system32\drivers\etc\hosts" -join ' '
+	Write-Host "Admin-Edit-Hosts: [$command] [$parameters]"
+	#Start-Process -FilePath $command -ArgumentList "c:\windows\system32\drivers\etc\hosts" -Verb RunAs
+	Start-Process -FilePath $command -ArgumentList $parameters -Verb RunAs 
 }
 
 function Admin-Run-HostEdit {
 	# see https://github.com/mgua/hostedit
-	
+	$command = "powershell"
+	$parameters = "c:\windows\system32\drivers\etc\hostedit.ps1" -join ' '
+	Write-Host "Admin-Run-HostEdit: [$command] [$parameters] (see https://github.com/mgua/hostedit )"
+	Start-Process -FilePath $command -ArgumentList $parameters -Verb RunAs 
 }
 
 function Alias-cdh {
@@ -47,15 +68,12 @@ function ProfileEdit {
 	& notepad.exe $profile
 }
 
-Set-Alias -Name he -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
-Set-Alias -Name pe -Value ProfileEdit
-Set-Alias -Name npp -Value "c:\program files\notepad++\notepad++.exe" -Description "Launch Notepad++ editor"
-Set-Alias -Name vi -Value Launch-Nvim -Description "Launh nvim"
+Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
+Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
+Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name np -Value Launch-NotepadPlusPlus
-Set-Alias aeh Admin-Edit-Hosts
-Set-Alias he Admin-Run-Hostedit
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
-Set-Alias -Name cdh -Value Alias-cdh 
+Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
 
 
 
