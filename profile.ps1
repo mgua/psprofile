@@ -39,6 +39,8 @@
 #
 #      rl:	run the specified command and pipes the output thru less pager
 #
+#    pspe:	Powershell profile edit: allow editing this file, and reloads 
+#		its contents after the changes
 #   
 
 function Profile-Install {
