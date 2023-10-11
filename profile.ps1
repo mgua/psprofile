@@ -25,6 +25,21 @@
 # check last access time of a folder/file
 # Get-ChildItem | Where-Object {$_.psiscontainer} | ForEach-Object {“{0}`t{1}” -f $_.name,$_.lastaccesstime}
 #
+#
+# WANT TO DO:
+#   svenv:	select virtual environemnt: allows to choose among the different 
+#		venv_* folders present in c:\users\<user>
+#		the chosen penvironment is then activated, after deactivating current
+#		active environment (if any)
+#		
+#    swsl:	select wsl: allow to choose the wsl to run among the available ones
+#
+#    srdi:	select and run docker image (integrates with docker running in the
+#		default wsl, shows the available images and launches the chosen one)
+#
+#      rl:	run the specified command and pipes the output thru less pager
+#
+#   
 
 function Profile-Install {
 	# this file will have to be appended to the existing $PROFILE file
