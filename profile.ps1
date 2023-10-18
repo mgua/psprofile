@@ -148,6 +148,10 @@ function ProfileEdit {
 	& notepad.exe $profile
 }
 
+function lsll {
+	& Get-ChildItem 
+}
+
 Set-Alias -Name pinstall -Value Profile-Install -Description "Get Install Instructions"
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
 Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
@@ -158,7 +162,7 @@ Set-Alias -Name npp -Value Launch-NotepadPlusPlus
 Set-Alias -Name np -Value Launch-NotepadPlusPlus
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
-
+Set-Alias -Name ll -Value lsll -Description " dir "
 
 
 
