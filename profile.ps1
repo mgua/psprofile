@@ -2,6 +2,8 @@
 # mgua@tomware.it
 # october 2023
 #
+# see https://github.com/mgua/psprofile.git
+#
 # save it in the file name specified by the $PROFILE variable
 # if the file does not exist, we need to create it
 #	New-Item -ItemType File -Path $PROFILE -Force
@@ -87,7 +89,7 @@ function Launch-Nvim {
 	# and we want to run it possibly in windows terminal
 	#	$command = "`"c:\program files\Neovim\bin\nvim.exe`""
 	#	$command = "`"c:\Users\mguardigli\AppData\Local\Programs\Neovim\bin\nvim.exe`""
-	#$mycmd = "`"nvim`""
+	#$mycmd = "`"nvim`"" (this quoting suddenly stopped working)on 12 oct 2023)
 	$mycmd = "nvim"
 	$cmd = where.exe $mycmd
 	# if available, run in windows terminal (wt), else cmd
