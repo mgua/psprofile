@@ -87,7 +87,8 @@ function Launch-Nvim {
 	# and we want to run it possibly in windows terminal
 	#	$command = "`"c:\program files\Neovim\bin\nvim.exe`""
 	#	$command = "`"c:\Users\mguardigli\AppData\Local\Programs\Neovim\bin\nvim.exe`""
-	$mycmd = "`"nvim`""
+	#$mycmd = "`"nvim`""
+	$mycmd = "nvim"
 	$cmd = where.exe $mycmd
 	# if available, run in windows terminal (wt), else cmd
 	# this horror code appears needed to avoid launching a not wt window
@@ -97,6 +98,7 @@ function Launch-Nvim {
 	} else {
 		$command = "cmd"
 		$cargs = "/c $cmd $args"
+		# cmd /c c:\nvimpath\nvim.exe $args
 	}
 	Write-Host "command: [$command] cargs: [$cargs]"
 	$parameters = $cargs -join ' '
