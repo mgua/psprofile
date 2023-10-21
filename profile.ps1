@@ -152,6 +152,15 @@ function lsll {
 	& Get-ChildItem 
 }
 
+function psProfileEdit {
+	# poweshell profile edit: allow editing this file and update
+	Set-Location -Path $env:USERPROFILE"\psprofile"
+	& nvim profile.ps1
+	Write-Host "when editing is done, run pinstall from this folder and execute the suggested copy command"
+	Write-Host '"consider executing "git add ." , "git commit -m..." and "git push" to update the repos'
+	Write-Host 'run ". .\profile.ps1" to activate the new aliases in the current session'
+}
+
 Set-Alias -Name pinstall -Value Profile-Install -Description "Get Install Instructions"
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
 Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
@@ -163,6 +172,7 @@ Set-Alias -Name np -Value Launch-NotepadPlusPlus
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
 Set-Alias -Name ll -Value lsll -Description " dir "
+Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell profile"
 
 
 
