@@ -2,6 +2,8 @@
 # mgua@tomware.it
 # october 2023
 #
+# this is pippo branch
+#
 # see https://github.com/mgua/psprofile.git
 #
 # save it in the file name specified by the $PROFILE variable
