@@ -2,6 +2,7 @@
 # mgua@tomware.it
 # october 2023
 #
+# branch pippo2
 #
 # see https://github.com/mgua/psprofile.git
 #
