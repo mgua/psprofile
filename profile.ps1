@@ -2,6 +2,8 @@
 # mgua@tomware.it
 # october 2023
 #
+# see https://github.com/mgua/psprofile.git
+#
 # save it in the file name specified by the $PROFILE variable
 # if the file does not exist, we need to create it
 #	New-Item -ItemType File -Path $PROFILE -Force
@@ -25,6 +27,23 @@
 # check last access time of a folder/file
 # Get-ChildItem | Where-Object {$_.psiscontainer} | ForEach-Object {“{0}`t{1}” -f $_.name,$_.lastaccesstime}
 #
+#
+# WANT TO DO:
+#   svenv:	select virtual environemnt: allows to choose among the different 
+#		venv_* folders present in c:\users\<user>
+#		the chosen penvironment is then activated, after deactivating current
+#		active environment (if any)
+#		
+#    swsl:	select wsl: allow to choose the wsl to run among the available ones
+#
+#    srdi:	select and run docker image (integrates with docker running in the
+#		default wsl, shows the available images and launches the chosen one)
+#
+#      rl:	run the specified command and pipes the output thru less pager
+#
+#    pspe:	Powershell profile edit: allow editing this file, and reloads 
+#		its contents after the changes
+#   
 
 function Profile-Install {
 	# this file will have to be appended to the existing $PROFILE file
@@ -70,7 +89,8 @@ function Launch-Nvim {
 	# and we want to run it possibly in windows terminal
 	#	$command = "`"c:\program files\Neovim\bin\nvim.exe`""
 	#	$command = "`"c:\Users\mguardigli\AppData\Local\Programs\Neovim\bin\nvim.exe`""
-	$mycmd = "`"nvim`""
+	#$mycmd = "`"nvim`"" (this quoting suddenly stopped working)on 12 oct 2023)
+	$mycmd = "nvim"
 	$cmd = where.exe $mycmd
 	# if available, run in windows terminal (wt), else cmd
 	# this horror code appears needed to avoid launching a not wt window
@@ -80,6 +100,7 @@ function Launch-Nvim {
 	} else {
 		$command = "cmd"
 		$cargs = "/c $cmd $args"
+		# cmd /c c:\nvimpath\nvim.exe $args
 	}
 	Write-Host "command: [$command] cargs: [$cargs]"
 	$parameters = $cargs -join ' '
@@ -127,6 +148,19 @@ function ProfileEdit {
 	& notepad.exe $profile
 }
 
+function lsll {
+	& Get-ChildItem 
+}
+
+function psProfileEdit {
+	# poweshell profile edit: allow editing this file and update
+	Set-Location -Path $env:USERPROFILE"\psprofile"
+	& nvim profile.ps1
+	Write-Host "when editing is done, run pinstall from this folder and execute the suggested copy command"
+	Write-Host '"consider executing "git add ." , "git commit -m..." and "git push" to update the repos'
+	Write-Host 'run ". .\profile.ps1" to activate the new aliases in the current session'
+}
+
 Set-Alias -Name pinstall -Value Profile-Install -Description "Get Install Instructions"
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
 Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
@@ -137,7 +171,8 @@ Set-Alias -Name npp -Value Launch-NotepadPlusPlus
 Set-Alias -Name np -Value Launch-NotepadPlusPlus
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
-
+Set-Alias -Name ll -Value lsll -Description " dir "
+Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell profile"
 
 
 
