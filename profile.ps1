@@ -86,6 +86,16 @@ function Get-ExecutablePath {
 
 
 
+# the following snippet comes from bing codepilot
+# 
+# $env_path = "C:\path\to\env"
+# $command = "python my_script.py"
+# $activate_script = "$env_path\Scripts\activate.ps1"
+# 
+# Start-Process powershell -ArgumentList "-NoExit", "-Command", "& '$activate_script'; $command"
+# 
+
+
 function Launch-Nvim {
 	# nvim executable can be in different locations
 	# and we want to run it possibly in windows terminal
