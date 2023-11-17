@@ -30,6 +30,21 @@ To solve that, set PowerShell to only require remote scripts to be signed using
 Alternatively, the local script must be signed to be executed. 
 see https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_signing?view=powershell-7.4
 
+### other tools
+We assume that some other prerequired tools are installed, being those referenced in the alias commands
+
+```
+    git client:     https://git-scm.com/
+    neovim:         https://neovim.io/
+                    https://github.com/mgua/kickstart.nvim  (multiplatform integrated setup)
+    notepad++:      https://notepad-plus-plus.org/
+    hostedit:       https://github.com/mgua/hostedit
+    oh-my-posh:     https://ohmyposh.dev/
+
+```
+
+
+
 ## Edit
 To edit the powershell profile, from windows, you can run the following command:
 ```
