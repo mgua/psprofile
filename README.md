@@ -25,11 +25,14 @@ It can also be that PowerShell blocks running local scripts.
 To solve that, set PowerShell to only require remote scripts to be signed using 
 
 ```
-
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
-
 ```
 Alternatively, the local script must be signed to be executed. 
 see https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_signing?view=powershell-7.4
 
+## Edit
+To edit the powershell profile, from windows, you can run the following command:
+```
+    notepad $PROFILE
+```
 
