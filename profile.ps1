@@ -186,5 +186,8 @@ Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folde
 Set-Alias -Name ll -Value lsll -Description " dir "
 Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell profile"
 
+# the following line invokes oh-my-posh
+# see https://ohmyposh.dev/
+oh-my-posh init pwsh | Invoke-Expression
 
 
