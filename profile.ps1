@@ -188,6 +188,8 @@ Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell prof
 
 # the following line invokes oh-my-posh
 # see https://ohmyposh.dev/
+# would be nice to perform installation of omp via a initial config menu thru which several
+# ancillary packets could be added
 oh-my-posh init pwsh | Invoke-Expression
 
 
