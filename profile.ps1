@@ -46,6 +46,47 @@
 #		its contents after the changes
 #   
 
+function Main-Menu {
+    param (
+        [string]$Title = 'Main Menu'
+    )
+    Clear-Host
+    Write-Host "================ $Title ================"
+    Write-Host "1: Press '1' for Help"
+    Write-Host "2: Press '2' for Install Options"
+    Write-Host "3: Press '3' for Editor option"
+    Write-Host "Q: Press 'Q' to quit."
+
+    # Display the menu
+    # Show-Menu -Title 'My Menu'
+    $selection = Read-Host "Please make a selection"
+    switch ($selection) {
+        '1' { psMenu-Help }
+        '2' { psMenu-Install-Options }
+        '3' { psMenu-Editor-Options }
+        '4' { Write-Host 'You chose option #4' }
+        'q' { return }  # Quit
+    }
+}
+
+function psMenu-Help {
+        Write-Host 'You chose Help' 
+}
+
+
+function psMenu-Install-Options {
+        Write-Host 'You chose Install-Options' 
+	Write-Host '# upgrade powershell # install git # install oh-my-posh # install chocolatey # install winget # install other tools '
+	Write-Host 'install'
+}
+
+
+function psMenu-Editor-Options {
+        Write-Host 'You chose Editor Options' 
+	Write-Host '# check if notepad++ is installed # check if vscode is installed # check if neovim is installed'
+}
+
+
 function Profile-Install {
 	# this file will have to be appended to the existing $PROFILE file
 	#
@@ -62,7 +103,7 @@ function Profile-Install {
 		# $thisScriptName = $MyInvocation.MyCommand.Name
 		#$thisScriptPath = $PSScriptRoot
 		#$thisScriptFullName = Join-Path $thisScriptPath $thisScriptName
-		Write-Host "copy/append newProfile to PROFILE:"
+		Write-Host "copy/append newProfile to PROFILE: execute this to activate"
 		Write-Host "  copy `"$newProfile`" `"$PROFILE`""
 	} else {
 		Write-Host "newProfile not found: [$newProfile]"
@@ -174,9 +215,11 @@ Set-Alias -Name np -Value Launch-NotepadPlusPlus
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
 Set-Alias -Name ll -Value lsll -Description " dir "
 Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell profile"
+Set-Alias -Name psmenu -Value Main-Menu -Description "show Main Menu"
 
 # the following line invokes oh-my-posh
 # see https://ohmyposh.dev/
 oh-my-posh init pwsh | Invoke-Expression
+Write-Host 'psprofile: Powershell profile manager. psmenu for help. See: https://github.com/mgua/psprofile'
 
 
