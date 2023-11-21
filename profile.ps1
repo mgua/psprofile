@@ -90,6 +90,7 @@ function psMenu-Install-Options {
     Write-Host "8: install/upgrade neovim"
     Write-Host "="
     Write-Host "9: winget upgrade --all"
+    Write-Host "T: choco install/upgrade bat curl fd fzf mingw make"
     Write-Host "Q: to quit."
 
     $selection = Read-Host "Please make a selection"
@@ -103,6 +104,7 @@ function psMenu-Install-Options {
         '7' { winget install vscode }
         '8' { winget install neovim.neovim }
 	'9' { winget upgrade --all }
+	'T' { choco install bat curl fd fzf mingw make }
         'q' { return }  # Quit
     }
 }
