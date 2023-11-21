@@ -1,6 +1,6 @@
 # this is my powershell alias file
 # mgua@tomware.it
-# october 2023
+# october-november 2023
 #
 #
 # see https://github.com/mgua/psprofile.git
@@ -50,21 +50,22 @@ function Main-Menu {
     param (
         [string]$Title = 'Main Menu'
     )
-    Clear-Host
     Write-Host "================ $Title ================"
     Write-Host "1: Press '1' for Help"
     Write-Host "2: Press '2' for Install Options"
     Write-Host "3: Press '3' for Editor option"
+    Write-Host "="
+    Write-Host "4: Press '4' to install Hack Nerd Font"
+    Write-Host "5: Press '5' for option 5"
     Write-Host "Q: Press 'Q' to quit."
 
-    # Display the menu
-    # Show-Menu -Title 'My Menu'
     $selection = Read-Host "Please make a selection"
     switch ($selection) {
         '1' { psMenu-Help }
         '2' { psMenu-Install-Options }
         '3' { psMenu-Editor-Options }
-        '4' { Write-Host 'You chose option #4' }
+        '4' { Install_HackNerdFonts }
+        '5' { Write-Host 'You chose option #5' }
         'q' { return }  # Quit
     }
 }
@@ -75,9 +76,45 @@ function psMenu-Help {
 
 
 function psMenu-Install-Options {
-        Write-Host 'You chose Install-Options' 
-	Write-Host '# upgrade powershell # install git # install oh-my-posh # install chocolatey # install winget # install other tools '
-	Write-Host 'install'
+    param (
+        [string]$Title = 'Install Options'
+    )
+    Write-Host "================ $Title ================"
+    Write-Host "1: Upgrade PowerShell"
+    Write-Host "2: install NerdFonts"
+    Write-Host "3: install/upgrade git"
+    Write-Host "4: install/upgrade oh-my-posh"
+    Write-Host "5: install/upgrade chocolatey"
+    Write-Host "6: install/upgrade notepad++"
+    Write-Host "7: install/upgrade Microsoft vscode"
+    Write-Host "8: install/upgrade neovim"
+    Write-Host "="
+    Write-Host "9: winget upgrade --all"
+    Write-Host "Q: to quit."
+
+    $selection = Read-Host "Please make a selection"
+    switch ($selection) {
+        '1' { winget install Microsoft.Powershell }
+        '2' { Install_HackNerdFonts }
+        '3' { winget install git.git }
+        '4' { winget install JanDeDobbeleer.OhMyPosh }
+        '5' { winget install chocolatey.chocolatey }
+        '6' { winget install notepad++.notepad++ }
+        '7' { winget install vscode }
+        '8' { winget install neovim.neovim }
+	'9' { winget upgrade --all }
+        'q' { return }  # Quit
+    }
+}
+
+function Install_HackNerdFonts {
+	# another install option is choco install -y hack-nerd-font
+	# Find-Module -name NerdFonts -AllVersions
+	Install-Module -Name NerdFonts
+	Import-Module -Name NerdFonts -DisableNameChecking
+	# Install-Nerdfont -? to see all the available fonts
+	#
+	Install-NerdFont -Name Hack
 }
 
 
