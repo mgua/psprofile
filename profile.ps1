@@ -64,8 +64,6 @@ function Main-Menu {
         '1' { psMenu-Help }
         '2' { psMenu-Install-Options }
         '3' { psMenu-Editor-Options }
-        '4' { Install_HackNerdFonts }
-        '5' { Write-Host 'You chose option #5' }
         'q' { return }  # Quit
     }
 }
