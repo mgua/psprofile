@@ -52,27 +52,33 @@ function Main-Menu {
         [string]$Title = 'Main Menu'
     )
     Write-Host "================ $Title ================"
-    Write-Host "1: Press '1' for Help"
-    Write-Host "2: Press '2' for Install Options"
-    Write-Host "3: Press '3' for Editor option"
-    Write-Host "="
-    Write-Host "4: Press '4' to install Hack Nerd Font"
-    Write-Host "5: Press '5' for option 5"
-    Write-Host "Q: Press 'Q' to quit."
+    Write-Host "1: for Help"
+    Write-Host "2: Install Options"
+    Write-Host "3: Editor option"
+    Write-Host "Q: quit"
 
     $selection = Read-Host "Please make a selection"
     switch ($selection) {
         '1' { psMenu-Help }
         '2' { psMenu-Install-Options }
         '3' { psMenu-Editor-Options }
-        '4' { Install_HackNerdFonts }
-        '5' { Write-Host 'You chose option #5' }
         'q' { return }  # Quit
     }
 }
 
 function psMenu-Help {
-        Write-Host 'You chose Help' 
+        Write-Host '================================================================== ' 
+        Write-Host 'psprofile: a tool to manage powershell profile' 
+        Write-Host '           see https://github.com/mgua/psprofile' 
+        Write-Host ' ' 
+        Write-Host 'Main commands:' 
+        Write-Host '  pinstall: activates profile for next opened powershell' 
+        Write-Host '  psmenu:   allows components installations'
+        Write-Host '  pspe:     edit psprofile' 
+        Write-Host ' ' 
+        Write-Host 'Customizations:' 
+        Write-Host '  See bottom part of the code in profile.ps1 to edit your aliases' 
+        Write-Host '================================================================== ' 
 }
 
 
@@ -90,8 +96,11 @@ function psMenu-Install-Options {
     Write-Host "7: install/upgrade Microsoft vscode"
     Write-Host "8: install/upgrade neovim"
     Write-Host "="
-    Write-Host "9: winget upgrade --all"
+    Write-Host "9: winget upgrade --all (possibly dangerous)"
     Write-Host "T: choco install/upgrade bat curl fd fzf mingw make"
+    Write-Host "W: install/upgrade wt Windows Terminal"
+    Write-Host "="
+    Write-Host "G: install/upgrade WINGET package installer"
     Write-Host "Q: to quit."
 
     $selection = Read-Host "Please make a selection"
@@ -106,6 +115,8 @@ function psMenu-Install-Options {
         '8' { winget install neovim.neovim }
 	'9' { winget upgrade --all }
 	'T' { choco install bat curl fd fzf mingw make }
+	'W' { winget install --id Microsoft.WindowsTerminal }
+	'G' { Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe }
         'q' { return }  # Quit
     }
 }
@@ -143,8 +154,10 @@ function Profile-Install {
 		# $thisScriptName = $MyInvocation.MyCommand.Name
 		#$thisScriptPath = $PSScriptRoot
 		#$thisScriptFullName = Join-Path $thisScriptPath $thisScriptName
-		Write-Host "copy/append newProfile to PROFILE: execute this to activate"
+		Write-Host "copy/append newProfile to PROFILE: executing profile copy..."
 		Write-Host "  copy `"$newProfile`" `"$PROFILE`""
+		copy "$newProfile" "$PROFILE"
+		Write-Host "done."
 	} else {
 		Write-Host "newProfile not found: [$newProfile]"
 		Write-Host "currentFolder: [$currentFolder] expected newProfile: [$newProfile]"
