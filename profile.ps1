@@ -2,7 +2,6 @@
 # mgua@tomware.it
 # october-november 2023
 #
-# branch pippo2
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -133,8 +132,32 @@ function Install_HackNerdFonts {
 
 
 function psMenu-Editor-Options {
-        Write-Host 'You chose Editor Options' 
-	Write-Host '# check if notepad++ is installed # check if vscode is installed # check if neovim is installed'
+    param (
+        [string]$Title = 'Install Options'
+    )
+    Write-Host "================ $Title ================"
+    Write-Host "1: customize vscode"
+    Write-Host "2: customize notepad++"
+    Write-Host "3: customize neovim (mgua kickstart)"
+    Write-Host "Q: to quit."
+
+    $selection = Read-Host "Please make a selection"
+    switch ($selection) {
+        '1' { 
+	      Write-Host "see https://code.visualstudio.com/docs/getstarted/settings" 
+              Write-Host "you can sync your vscode settings to your github account" 
+	    }
+        '2' { 
+	      Write-Host "see https://www.npp-user-manual.org/docs/preferences/#style-configurator" 
+              Write-Host "default per user configs go in %AppData%\notepad++"
+	    }
+        '3' { 
+	      Write-Host "cd ~/AppData/local/nvim"
+	      git pull "https://marco.guardigli/kickstart.git"
+	      nvim
+	      }
+        'q' { return }  # Quit
+    }
 }
 
 
