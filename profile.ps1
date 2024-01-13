@@ -1,4 +1,4 @@
-# this is my powershell alias file
+﻿# this is my powershell alias file
 # mgua@tomware.it
 # october-november 2023
 #
@@ -86,20 +86,21 @@ function psMenu-Install-Options {
         [string]$Title = 'Install Options'
     )
     Write-Host "================ $Title ================"
-    Write-Host "1: Upgrade PowerShell"
-    Write-Host "2: install NerdFonts"
-    Write-Host "3: install/upgrade git"
-    Write-Host "4: install/upgrade oh-my-posh"
-    Write-Host "5: install/upgrade chocolatey"
-    Write-Host "6: install/upgrade notepad++"
-    Write-Host "7: install/upgrade Microsoft vscode"
-    Write-Host "8: install/upgrade neovim"
+    Write-Host "1: Upgrade PowerShell (winget)" 
+    Write-Host "2: install NerdFonts (pwshell)"
+    Write-Host "3: install/upgrade git (winget)"
+    Write-Host "4: install/upgrade oh-my-posh (winget)"
+    Write-Host "5: install/upgrade chocolatey (winget)"
+    Write-Host "6: install/upgrade notepad++ (winget)"
+    Write-Host "7: install/upgrade Microsoft vscode (winget)"
+    Write-Host "8: install/upgrade neovim (winget)"
     Write-Host "="
     Write-Host "9: winget upgrade --all (possibly dangerous)"
+    Write-Host "C: install chocolatey (pwshell)"
     Write-Host "T: choco install/upgrade bat curl fd fzf mingw make"
     Write-Host "W: install/upgrade wt Windows Terminal"
     Write-Host "="
-    Write-Host "G: install/upgrade WINGET package installer"
+    Write-Host "G: install/upgrade WINGET package installer (pwshell)"
     Write-Host "Q: to quit."
 
     $selection = Read-Host "Please make a selection"
@@ -113,6 +114,7 @@ function psMenu-Install-Options {
         '7' { winget install vscode }
         '8' { winget install neovim.neovim }
 	'9' { winget upgrade --all }
+	'C' { Install_Chocolatey }
 	'T' { choco install bat curl fd fzf mingw make }
 	'W' { winget install --id Microsoft.WindowsTerminal }
 	'G' { Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe }
@@ -128,6 +130,12 @@ function Install_HackNerdFonts {
 	# Install-Nerdfont -? to see all the available fonts
 	#
 	Install-NerdFont -Name Hack
+}
+
+
+function Install_Chocolatey {
+	# from chocolatey.org website
+	Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 }
 
 
