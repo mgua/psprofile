@@ -99,6 +99,7 @@ function psMenu-Install-Options {
     Write-Host "C: install chocolatey (pwshell)"
     Write-Host "T: choco install/upgrade bat curl fd fzf mingw make"
     Write-Host "W: install/upgrade wt Windows Terminal"
+    Write-Host "X: install/upgrade wt Windows Terminal (ws2022)"
     Write-Host "="
     Write-Host "G: install/upgrade WINGET package installer (pwshell)"
     Write-Host "Q: to quit."
@@ -117,6 +118,7 @@ function psMenu-Install-Options {
 	'C' { Install_Chocolatey }
 	'T' { choco install bat curl fd fzf mingw make }
 	'W' { winget install --id Microsoft.WindowsTerminal }
+	'X' { Install_WindowsTerminal_on_ws2022 }
 	'G' { Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe }
         'q' { return }  # Quit
     }
@@ -136,6 +138,18 @@ function Install_HackNerdFonts {
 function Install_Chocolatey {
 	# from chocolatey.org website
 	Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+}
+
+
+function Install_WindowsTerminal_on_ws2022 {
+	# choco install microsoft.windows.terminal
+	# from https://serverdecode.com/install-terminal-windows-server/
+	#
+	Invoke-WebRequest -Uri https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -outfile Microsoft.VCLibs.x86.14.00.Desktop.appx
+	Add-AppxPackage Microsoft.VCLibs.x86.14.00.Desktop.appx
+
+	Invoke-WebRequest -Uri https://github.com/microsoft/terminal/releases/download/v1.18.3181.0/Microsoft.WindowsTerminal_1.18.3181.0_8wekyb3d8bbwe.msixbundle -outfile Microsoft.WindowsTerminal_1.18.3181.0_8wekyb3d8bbwe.msixbundle
+	Add-AppxPackage Microsoft.WindowsTerminal_1.18.3181.0_8wekyb3d8bbwe.msixbundle
 }
 
 
