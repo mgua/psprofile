@@ -11,7 +11,7 @@ Open a powershell prompt and, from your home folder, execute the following comma
 ```
     mkdir psprofile
     cd psprofile
-    git clone https://github.com/mgua/psprofile.git
+    git clone https://github.com/mgua/psprofile.git .
     . .\profile.ps1
     pinstall
 ```
