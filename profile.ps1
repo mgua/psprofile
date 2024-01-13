@@ -146,9 +146,14 @@ function Install_WindowsTerminal_on_ws2022 {
 	# from https://serverdecode.com/install-terminal-windows-server/
 	#
 	Invoke-WebRequest -Uri https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -outfile Microsoft.VCLibs.x86.14.00.Desktop.appx
-	Add-AppxPackage Microsoft.VCLibs.x86.14.00.Desktop.appx
-
+ 	Import-Module appx
+	# Add-AppxPackage Microsoft.VCLibs.x86.14.00.Desktop.appx
+	Invoke-WebRequest -Uri https://github.com/microsoft/terminal/releases/download/v1.18.3181.0/Microsoft.WindowsTerminal_1.18.3181.0_8wekyb3d8bbwe.msixbundle_Windows10_PreinstallKit.zip -outfile Microsoft.WindowsTerminal_1.18.3181.0_8wekyb3d8bbwe.msixbundle_Windows10_PreinstallKit.zip
+ 	# from inside this zip, the x64 preinstall object has to be installed with add-appxpackage
+  	Add-AppxPackage Microsoft.UI.Xaml.2.8_8.2310.30001.0_x64__8wekyb3d8bbwe.appx
+   	# then we download the actual terminal app
 	Invoke-WebRequest -Uri https://github.com/microsoft/terminal/releases/download/v1.18.3181.0/Microsoft.WindowsTerminal_1.18.3181.0_8wekyb3d8bbwe.msixbundle -outfile Microsoft.WindowsTerminal_1.18.3181.0_8wekyb3d8bbwe.msixbundle
+ 	#not ok. sorry
 	Add-AppxPackage Microsoft.WindowsTerminal_1.18.3181.0_8wekyb3d8bbwe.msixbundle
 }
 
