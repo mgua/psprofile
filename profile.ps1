@@ -317,6 +317,8 @@ function psProfileEdit {
 }
 
 Set-Alias -Name pinstall -Value Profile-Install -Description "Get Install Instructions"
+Set-Alias -Name la -Value Get-Alias -Description "List command Aliases defined in Powershell"
+Set-Alias -Name ga -Value Get-Alias -Description "List command Aliases defined in Powershell"
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
 Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
 Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
