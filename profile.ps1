@@ -2,6 +2,10 @@
 # mgua@tomware.it
 # october-november 2023
 #
+# may 31 2024:
+#	added la/ga aliases to show alias list
+#	added ex alias to open file explorer in a specific path or in current path 
+#
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -277,6 +281,19 @@ function Launch-NotepadPlusPlus {
 		}
 }
 
+
+function Launch-Explorer {
+	$command = "`"c:\windows\explorer.exe`""
+	$parameters = $args -join ' '
+		if ($parameters) {
+			Start-Process -FilePath $command -ArgumentList $parameters
+		} else {
+			# if no parameters are passed open current folder
+			Start-Process -FilePath $command -ArgumentList "."
+		}
+}
+
+
 function Admin-Edit-Hosts {
 	# edit c:\windows\system32\drivers\etc\hosts from admin mode
 	$command = "`"c:\program files\notepad++\notepad++.exe`""
@@ -326,6 +343,7 @@ Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name nvim -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus
 Set-Alias -Name np -Value Launch-NotepadPlusPlus
+Set-Alias -Name ex -Value Launch-Explorer
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
 Set-Alias -Name ll -Value lsll -Description " dir "
