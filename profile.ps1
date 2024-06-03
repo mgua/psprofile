@@ -50,6 +50,107 @@
 #		its contents after the changes
 #   
 
+
+
+
+########################### by hapylestat menu routines BEGIN ######################
+# taken from https://gist.github.com/hapylestat/b940d13b7d272fb6105a1146ddcd4e2a
+# by https://github.com/hapylestat
+# referenced by https://stackoverflow.com/questions/17576015/powershell-menu-selection-like-grub-curses-etc
+#
+## USAGE #
+# $bad = "Item1","Item2"
+# $selection = Menu $bad "Select menu item"
+# 
+# Switch ($selection){
+#     0 {
+#         Write-Host "Menu item 0"
+#     }
+#     1 {
+#      Write-Host "Menu item 1"
+#     }
+# }
+
+
+function moveCursor{ param($position)
+  $host.UI.RawUI.CursorPosition = $position
+}
+
+
+function RedrawMenuItems{ 
+    param ([array]$menuItems, $oldMenuPos=0, $menuPosition=0, $currPos)
+    
+    # +1 comes from leading new line in the menu
+    $menuLen = $menuItems.Count + 1
+    $fcolor = $host.UI.RawUI.ForegroundColor
+    $bcolor = $host.UI.RawUI.BackgroundColor
+    $menuOldPos = New-Object System.Management.Automation.Host.Coordinates(0, ($currPos.Y - ($menuLen - $oldMenuPos)))
+    $menuNewPos = New-Object System.Management.Automation.Host.Coordinates(0, ($currPos.Y - ($menuLen - $menuPosition)))
+    
+    moveCursor $menuOldPos
+    Write-Host "`t" -NoNewLine
+    Write-Host "$oldMenuPos. $($menuItems[$oldMenuPos])" -fore $fcolor -back $bcolor -NoNewLine
+
+    moveCursor $menuNewPos
+    Write-Host "`t" -NoNewLine
+    Write-Host "$menuPosition. $($menuItems[$menuPosition])" -fore $bcolor -back $fcolor -NoNewLine
+
+    moveCursor $currPos
+}
+
+function DrawMenu { param ([array]$menuItems, $menuPosition, $menuTitel)
+    $fcolor = $host.UI.RawUI.ForegroundColor
+    $bcolor = $host.UI.RawUI.BackgroundColor
+
+    $menuwidth = $menuTitel.length + 4
+    Write-Host "`t" -NoNewLine;    Write-Host ("=" * $menuwidth) -fore $fcolor -back $bcolor
+    Write-Host "`t" -NoNewLine;    Write-Host " $menuTitel " -fore $fcolor -back $bcolor
+    Write-Host "`t" -NoNewLine;    Write-Host ("=" * $menuwidth) -fore $fcolor -back $bcolor
+    Write-Host ""
+    for ($i = 0; $i -le $menuItems.length;$i++) {
+        Write-Host "`t" -NoNewLine
+        if ($i -eq $menuPosition) {
+            Write-Host "$i. $($menuItems[$i])" -fore $bcolor -back $fcolor -NoNewline
+            Write-Host "" -fore $fcolor -back $bcolor
+        } else {
+           if ($($menuItems[$i])) {
+            Write-Host "$i. $($menuItems[$i])" -fore $fcolor -back $bcolor
+           } 
+        }
+    }
+    # leading new line
+    Write-Host ""
+}
+
+function Menu { param ([array]$menuItems, $menuTitel = "MENU")
+    $vkeycode = 0
+    $pos = 0
+    $oldPos = 0
+    DrawMenu $menuItems $pos $menuTitel
+    $currPos=$host.UI.RawUI.CursorPosition
+    While ($vkeycode -ne 13) {
+        $press = $host.ui.rawui.readkey("NoEcho,IncludeKeyDown")
+        $vkeycode = $press.virtualkeycode
+        Write-host "$($press.character)" -NoNewLine
+        $oldPos=$pos;
+        If ($vkeycode -eq 38) {$pos--}
+        If ($vkeycode -eq 40) {$pos++}
+        if ($pos -lt 0) {$pos = 0}
+        if ($pos -ge $menuItems.length) {$pos = $menuItems.length -1}
+        RedrawMenuItems $menuItems $oldPos $pos $currPos
+    }
+    Write-Output $pos
+}
+
+########################### by hapylestat menu routines END ######################
+
+
+
+
+
+
+
+
 function Main-Menu {
     param (
         [string]$Title = 'Main Menu'
@@ -333,6 +434,39 @@ function psProfileEdit {
 	Write-Host 'run ". .\profile.ps1" to activate the new aliases in the current session'
 }
 
+
+function Select-VirtualEnvironment {
+	# select and activate virtual environment
+	param()
+	$venvFolders = Get-ChildItem -Directory -Filter "*venv*"
+	if ($venvFolders.Count -eq 0) {
+		Write-Host "No folders found with 'venv' in the name."
+		return
+	}
+	$selectedIndex = 0
+	while ($true) {
+		Clear-Host
+		# Display numbered list of venv folders
+		for ($i = 0; $i -lt $venvFolders.Count; $i++) {
+			$color = if ($i -eq $selectedIndex) { "green" } else { "white" }
+			Write-Host -ForegroundColor $color ("{0} - {1}" -f ($i + 1), $venvFolders[$i].Name)
+		}
+		$key = Read-HostKey
+		switch ($key.Key) {
+			"UpArrow" { $selectedIndex = ($selectedIndex - 1) % $venvFolders.Count }
+			"DownArrow" { $selectedIndex = ($selectedIndex + 1) % $venvFolders.Count }
+			"Enter" { break }
+		}
+	}
+	$chosenFolder = $venvFolders[$selectedIndex]
+	# Write-Host "Selected folder: $chosenFolder"
+	# Activate the virtual environment (adjust path if Scripts is named differently)
+	& "$chosenFolder\Scripts\Activate.ps1"
+}
+
+
+
+
 Set-Alias -Name pinstall -Value Profile-Install -Description "Get Install Instructions"
 Set-Alias -Name la -Value Get-Alias -Description "List command Aliases defined in Powershell"
 Set-Alias -Name ga -Value Get-Alias -Description "List command Aliases defined in Powershell"
@@ -347,8 +481,10 @@ Set-Alias -Name ex -Value Launch-Explorer
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
 Set-Alias -Name ll -Value lsll -Description " dir "
+Set-Alias -Name lv -Value "lsll | grep venv" -Description "show venv folders"
 Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell profile"
 Set-Alias -Name psmenu -Value Main-Menu -Description "show Main Menu"
+Set-Alias -Name se -Value Select-VirtualEnvironment -Description "choose & activate *venv*"
 
 # the following line invokes oh-my-posh
 # see https://ohmyposh.dev/
