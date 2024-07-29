@@ -3,6 +3,11 @@
 a tool to manage powershell aliases
 Marco Guardigli, october 2023
 
+added jul 2024
+  le (list environments: list venv folders in current location, with sizes)
+  se (select environment: allows to choose and activate a venv)
+
+
 Allows team definition and management of powershell aliases to automate tasks,
 for windows users.
 
@@ -45,6 +50,8 @@ see https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.cor
     cdh         cd to home
     ll          ls -la
     pspe        edit powershell profile
+    lv          list virtual environment (venv folders) with related sizes
+    se          select and activate a virtual environment
     psmenu      show menu
 
     
