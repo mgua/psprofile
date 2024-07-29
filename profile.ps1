@@ -6,6 +6,10 @@
 #	added la/ga aliases to show alias list
 #	added ex alias to open file explorer in a specific path or in current path 
 #
+# jul 30 2024:
+#	added lv: list python virtual env folders with *venv* name (with folder size)
+#	added se: select and activate python virtualenv (with venv)
+#
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -203,6 +207,7 @@ function psMenu-Install-Options {
     Write-Host "9: winget upgrade --all (possibly dangerous)"
     Write-Host "C: install chocolatey (pwshell)"
     Write-Host "T: choco install/upgrade bat curl fd fzf mingw make"
+    Write-Host "U: upgrade psprofile (this tool) [possibly overwriting local mods]"
     Write-Host "W: install/upgrade wt Windows Terminal"
     Write-Host "X: install/upgrade wt Windows Terminal (ws2022)"
     Write-Host "="
@@ -222,6 +227,7 @@ function psMenu-Install-Options {
 	'9' { winget upgrade --all }
 	'C' { Install_Chocolatey }
 	'T' { choco install bat curl fd fzf mingw make }
+	'U' { UpgradePsProfile }
 	'W' { winget install --id Microsoft.WindowsTerminal }
 	'X' { Install_WindowsTerminal_on_ws2022 }
 	'G' { Add-AppxPackage -RegisterByFamilyName -MainPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe }
@@ -290,6 +296,21 @@ function psMenu-Editor-Options {
 	      }
         'q' { return }  # Quit
     }
+}
+
+
+function UpgradePsProfile {
+	# upgrade this tool, downloading new version in current folder, via git
+	# we expect that the folder from which the command is run is the one where the initial
+	# git clone was performed
+	# CAUTION. this overwrites local changes
+	Write-Host "UpgradePsProfile: to be run from folder where psprofile was git-cloned"
+	Write-Host "                  CAUTION: git pull may overwrite local changes not committed"
+	pause "Press ENTER to continue, or CTRL-C to cancel"
+	git add .
+	git pull 
+	. .\profile.ps1
+	& pinstall
 }
 
 
