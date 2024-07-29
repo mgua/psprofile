@@ -98,11 +98,11 @@ function RedrawMenuItems{
     moveCursor $currPos
 }
 
-function DrawMenu { param ([array]$menuItems, $menuPosition, $menuTitel)
+function DrawMenu { param ([array]$menuItems, $menuPosition, $menuTitle)
     $fcolor = $host.UI.RawUI.ForegroundColor
     $bcolor = $host.UI.RawUI.BackgroundColor
 
-    $menuwidth = $menuTitel.length + 4
+    $menuwidth = $menuTitle.length + 4
     Write-Host "`t" -NoNewLine;    Write-Host ("=" * $menuwidth) -fore $fcolor -back $bcolor
     Write-Host "`t" -NoNewLine;    Write-Host " $menuTitel " -fore $fcolor -back $bcolor
     Write-Host "`t" -NoNewLine;    Write-Host ("=" * $menuwidth) -fore $fcolor -back $bcolor
@@ -122,11 +122,11 @@ function DrawMenu { param ([array]$menuItems, $menuPosition, $menuTitel)
     Write-Host ""
 }
 
-function Menu { param ([array]$menuItems, $menuTitel = "MENU")
+function Menu { param ([array]$menuItems, $menuTitle = "MENU")
     $vkeycode = 0
     $pos = 0
     $oldPos = 0
-    DrawMenu $menuItems $pos $menuTitel
+    DrawMenu $menuItems $pos $menuTitle
     $currPos=$host.UI.RawUI.CursorPosition
     While ($vkeycode -ne 13) {
         $press = $host.ui.rawui.readkey("NoEcho,IncludeKeyDown")
@@ -434,36 +434,68 @@ function psProfileEdit {
 	Write-Host 'run ". .\profile.ps1" to activate the new aliases in the current session'
 }
 
+function DeactivateEnvironment {
+    # Check for common environment managers
+    if ($env:VIRTUAL_ENV) {
+        Write-Host "Virtual environment is active: $($env:VIRTUAL_ENV)"
+        if ($env:CONDA_PREFIX) {
+            # Write-Host "Deactivating conda environment..."
+            conda deactivate
+        } else {
+            # Write-Host "Deactivating venv/virtualenv..."
+            deactivate
+        }
+    } else {
+        Write-Host "No supported environment manager detected: Assuming no environment is active."
+        return
+    }
+}    
+
 
 function Select-VirtualEnvironment {
-	# select and activate virtual environment
-	param()
-	$venvFolders = Get-ChildItem -Directory -Filter "*venv*"
-	if ($venvFolders.Count -eq 0) {
-		Write-Host "No folders found with 'venv' in the name."
-		return
-	}
-	$selectedIndex = 0
-	while ($true) {
-		Clear-Host
-		# Display numbered list of venv folders
-		for ($i = 0; $i -lt $venvFolders.Count; $i++) {
-			$color = if ($i -eq $selectedIndex) { "green" } else { "white" }
-			Write-Host -ForegroundColor $color ("{0} - {1}" -f ($i + 1), $venvFolders[$i].Name)
-		}
-		$key = Read-HostKey
-		switch ($key.Key) {
-			"UpArrow" { $selectedIndex = ($selectedIndex - 1) % $venvFolders.Count }
-			"DownArrow" { $selectedIndex = ($selectedIndex + 1) % $venvFolders.Count }
-			"Enter" { break }
-		}
-	}
-	$chosenFolder = $venvFolders[$selectedIndex]
-	# Write-Host "Selected folder: $chosenFolder"
-	# Activate the virtual environment (adjust path if Scripts is named differently)
-	& "$chosenFolder\Scripts\Activate.ps1"
+    # list folders with *venv* in their name and allow to choose one switching to it
+    $venvFolders = Get-ChildItem -Directory -Filter "*venv*"
+    if ($venvFolders.Count -eq 0) {
+        Write-Host "No folders found with 'venv' in the name."
+        return
+    }
+    $myvenv = Menu $venvFolders "Select venv"
+    $myvenvdir = $venvFolders[$myvenv]
+    # Write-Host "You Selected $myvenv : $myvenvdir"
+    $activatecmd = "$($myvenvdir)\Scripts\Activate.ps1"
+    DeactivateEnvironment
+    # Write-Host "activating venv environment with cmd = [$activatecmd]"
+    & $activatecmd
+    Write-Host "VIRTUAL_ENV = [$env:VIRTUAL_ENV]"
 }
 
+
+function Get-FolderSize {
+    param(
+        [string]$Path
+    )
+    $size = Get-ChildItem $Path -Recurse | Measure-Object -Property Length -Sum
+    $sizeInBytes = $size.Sum
+    # Convert bytes to megabytes for better readability
+    $sizeInMB = $sizeInBytes / 1MB
+    # Write-Host "Total size of '$Path': $($sizeInMB:F2) MB"
+    return $sizeInMB
+}
+
+
+function ListVenvFolders {
+    # list folders with *venv* in their name and show disk size
+    $venvFolders = Get-ChildItem -Directory -Filter "*venv*"
+    if ($venvFolders.Count -eq 0) {
+        Write-Host "No folders found with 'venv' in the name."
+       return
+    }
+    foreach ($venvf in $venvFolders) { 
+        $fsize = Get-FolderSize -Path $venvf.Fullname
+        $fsize_approx = "{0:N0}"  -f $fsize
+        Write-Host "$($venvf.Name):`t`t $fsize_approx" 
+    }
+}
 
 
 
@@ -481,7 +513,7 @@ Set-Alias -Name ex -Value Launch-Explorer
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
 Set-Alias -Name ll -Value lsll -Description " dir "
-Set-Alias -Name lv -Value "lsll | grep venv" -Description "show venv folders"
+Set-Alias -Name lv -Value "ListVenvFolders" -Description "show venv folders and related sizes"
 Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell profile"
 Set-Alias -Name psmenu -Value Main-Menu -Description "show Main Menu"
 Set-Alias -Name se -Value Select-VirtualEnvironment -Description "choose & activate *venv*"
