@@ -10,6 +10,10 @@
 #	added lv: list python virtual env folders with *venv* name (with folder size)
 #	added se: select and activate python virtualenv (with venv)
 #
+# aug 16 2024:
+#	added lla: to somewhat replicate the linux ls -lah command that suitably 
+#	shows filesizes in adequate units
+#
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -147,8 +151,6 @@ function Menu { param ([array]$menuItems, $menuTitle = "MENU")
 }
 
 ########################### by hapylestat menu routines END ######################
-
-
 
 
 
@@ -519,6 +521,33 @@ function ListVenvFolders {
 }
 
 
+function Get-FileSizeString {
+    # this is used in lla alias
+    # mgua 2024 08 16 (thanks gemini)
+    param(
+        [int64]$sizeInBytes
+    )
+
+    $sizeKB = $sizeInBytes / 1KB
+    $sizeMB = $sizeKB / 1024
+    $sizeGB = $sizeMB / 1024
+
+    if ($sizeGB -ge 1) {
+        return "{0:N2} GB" -f $sizeGB
+    } elseif ($sizeMB -ge 1) {
+        return "{0:N2} MB" -f $sizeMB
+    } else {
+        return "{0:N0} KB" -f $sizeKB
+    }
+}
+
+
+function Alias-lla {
+    # mgua aug 16 2024
+    Get-ChildItem -Force | Format-Table -AutoSize Name, @{Name="LastWriteTime";Expression={$_.LastWriteTime.ToString("yyyy/MM/dd HH:mm:ss")}}, @{Name="Size";Expression={Get-FileSizeString $_.Length}}, @{Name="Mode";Expression={$_.Mode}}
+}
+
+
 
 Set-Alias -Name pinstall -Value Profile-Install -Description "Get Install Instructions"
 Set-Alias -Name la -Value Get-Alias -Description "List command Aliases defined in Powershell"
@@ -538,6 +567,8 @@ Set-Alias -Name lv -Value "ListVenvFolders" -Description "show venv folders and 
 Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell profile"
 Set-Alias -Name psmenu -Value Main-Menu -Description "show Main Menu"
 Set-Alias -Name se -Value Select-VirtualEnvironment -Description "choose & activate *venv*"
+Set-Alias -Name lla -Value Alias-lla -Description "shows file size in suitable units like ls -lah"
+
 
 # the following line invokes oh-my-posh
 # see https://ohmyposh.dev/
