@@ -14,6 +14,9 @@
 #	added lla: to somewhat replicate the linux ls -lah command that suitably 
 #	shows filesizes in adequate units
 #
+# aug 19 2024:
+#	add alias visualization in psmenu
+#
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -165,6 +168,7 @@ function Main-Menu {
     Write-Host "1: for Help"
     Write-Host "2: Install Options"
     Write-Host "3: Editor option"
+    Write-Host "4: Show customized aliases"
     Write-Host "Q: quit"
 
     $selection = Read-Host "Please make a selection"
@@ -172,6 +176,7 @@ function Main-Menu {
         '1' { psMenu-Help }
         '2' { psMenu-Install-Options }
         '3' { psMenu-Editor-Options }
+        '4' { cat c:/users/mgua/psprofile/profile.ps1 | grep ^Set-Alias }
         'q' { return }  # Quit
     }
 }
@@ -472,7 +477,7 @@ function DeactivateEnvironment {
         Write-Host "No supported environment manager detected: Assuming no environment is active."
         return
     }
-}    
+}
 
 
 function Select-VirtualEnvironment {
