@@ -579,7 +579,9 @@ Set-Alias -Name lla -Value Alias-lla -Description "shows file size in suitable u
 # see https://ohmyposh.dev/
 # would be nice to perform installation of omp via a initial config menu thru which several
 # ancillary packets could be added
-oh-my-posh init pwsh | Invoke-Expression
+#
+# oh-my-posh init pwsh | Invoke-Expression
+& ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\jandedobbeleer.omp.json" --print) -join "`n"))
 Write-Host 'psprofile: Powershell profile manager. psmenu for help. See: https://github.com/mgua/psprofile'
 
 
