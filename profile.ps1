@@ -16,7 +16,9 @@
 #
 # aug 19 2024:
 #	add alias visualization in psmenu
-#
+# 
+# oct 02 2024: mgua
+#	add mc alias for GNU Midnight Commander (choco install mc)
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -574,8 +576,8 @@ Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name nvim -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
-Set-Alias -Name npp -Value Launch-NotepadPlusPlus
-Set-Alias -Name np -Value Launch-NotepadPlusPlus
+Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
+Set-Alias -Name np -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name ex -Value Launch-Explorer
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
