@@ -16,7 +16,10 @@
 #
 # aug 19 2024:
 #	add alias visualization in psmenu
-#
+# 
+# oct 02 2024: mgua
+#	add mc alias for GNU Midnight Commander (choco install mc)
+#	add secd alias to choose environment and change current folder to project folder
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -422,6 +425,17 @@ function Launch-Explorer {
 		}
 }
 
+function Launch-MidnightCommander {
+	$command = "`"C:\Program Files (x86)\Midnight Commander\mc.exe`""
+	$parameters = $args -join ' '
+		if ($parameters) {
+			Start-Process -FilePath $command -ArgumentList $parameters
+		} else {
+			# if no parameters are passed open current folder
+			Start-Process -FilePath $command -ArgumentList "."
+		}
+}
+
 
 function Admin-Edit-Hosts {
 	# edit c:\windows\system32\drivers\etc\hosts from admin mode
@@ -498,6 +512,31 @@ function Select-VirtualEnvironment {
 }
 
 
+function Select-VirtualEnvironmentCd {
+    # list folders with *venv* in their name and allow to choose one switching to it
+    # then changes the current folder to the code folder
+    # the code folder is the folder with same name without initial "venv_"
+    $venvFolders = Get-ChildItem -Directory -Filter "venv_*"
+    if ($venvFolders.Count -eq 0) {
+        Write-Host "No folders found with name beginning with venv_ "
+        return
+    }
+    $myvenv = Menu $venvFolders "Select venv"
+    $myvenvdir = $venvFolders[$myvenv]
+    # Write-Host "You Selected $myvenv : $myvenvdir"
+    $activatecmd = "$($myvenvdir)\Scripts\Activate.ps1"
+    DeactivateEnvironment
+    # Write-Host "activating venv environment with cmd = [$activatecmd]"
+    & $activatecmd
+    Write-Host "VIRTUAL_ENV = [$env:VIRTUAL_ENV]"
+    #
+    # now we cd to the project folder
+    $myFolder = $myvenvdir -replace 'venv_', ''		# remove "venv_" from path
+    Set-Location -path "$myFolder"
+}
+
+
+
 function Get-FolderSize {
     param(
         [string]$Path
@@ -562,8 +601,9 @@ Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in a
 Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name nvim -Value Launch-Nvim -Description "Launch neovim"
-Set-Alias -Name npp -Value Launch-NotepadPlusPlus
-Set-Alias -Name np -Value Launch-NotepadPlusPlus
+Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
+Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
+Set-Alias -Name np -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name ex -Value Launch-Explorer
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
@@ -572,6 +612,7 @@ Set-Alias -Name lv -Value "ListVenvFolders" -Description "show venv folders and 
 Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell profile"
 Set-Alias -Name psmenu -Value Main-Menu -Description "show Main Menu"
 Set-Alias -Name se -Value Select-VirtualEnvironment -Description "choose & activate *venv*"
+Set-Alias -Name secd -Value Select-VirtualEnvironmentCd -Description "choose & activate venv_* and cd to prj folder"
 Set-Alias -Name lla -Value Alias-lla -Description "shows file size in suitable units like ls -lah"
 
 
