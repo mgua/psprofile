@@ -425,7 +425,7 @@ function Launch-Explorer {
 }
 
 function Launch-MidnightCommander {
-	$command = `"C:\Program Files (x86)\Midnight Commander\mc.exe`"
+	$command = "`"C:\Program Files (x86)\Midnight Commander\mc.exe`""
 	$parameters = $args -join ' '
 		if ($parameters) {
 			Start-Process -FilePath $command -ArgumentList $parameters
