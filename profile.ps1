@@ -417,6 +417,17 @@ function Launch-Explorer {
 		}
 }
 
+function Launch-MidnightCommander {
+	$command = `"C:\Program Files (x86)\Midnight Commander\mc.exe`"
+	$parameters = $args -join ' '
+		if ($parameters) {
+			Start-Process -FilePath $command -ArgumentList $parameters
+		} else {
+			# if no parameters are passed open current folder
+			Start-Process -FilePath $command -ArgumentList "."
+		}
+}
+
 
 function Admin-Edit-Hosts {
 	# edit c:\windows\system32\drivers\etc\hosts from admin mode
@@ -557,6 +568,7 @@ Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in a
 Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name nvim -Value Launch-Nvim -Description "Launch neovim"
+Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus
 Set-Alias -Name np -Value Launch-NotepadPlusPlus
 Set-Alias -Name ex -Value Launch-Explorer
