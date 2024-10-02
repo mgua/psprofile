@@ -19,6 +19,7 @@
 # 
 # oct 02 2024: mgua
 #	add mc alias for GNU Midnight Commander (choco install mc)
+#	add secd alias to choose environment and change current folder to project folder
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -511,6 +512,31 @@ function Select-VirtualEnvironment {
 }
 
 
+function Select-VirtualEnvironmentCd {
+    # list folders with *venv* in their name and allow to choose one switching to it
+    # then changes the current folder to the code folder
+    # the code folder is the folder with same name without initial "venv_"
+    $venvFolders = Get-ChildItem -Directory -Filter "venv_*"
+    if ($venvFolders.Count -eq 0) {
+        Write-Host "No folders found with name beginning with venv_ "
+        return
+    }
+    $myvenv = Menu $venvFolders "Select venv"
+    $myvenvdir = $venvFolders[$myvenv]
+    # Write-Host "You Selected $myvenv : $myvenvdir"
+    $activatecmd = "$($myvenvdir)\Scripts\Activate.ps1"
+    DeactivateEnvironment
+    # Write-Host "activating venv environment with cmd = [$activatecmd]"
+    & $activatecmd
+    Write-Host "VIRTUAL_ENV = [$env:VIRTUAL_ENV]"
+    #
+    # now we cd to the project folder
+    $myFolder = $myvenvdir -replace 'venv_', ''		# remove "venv_" from path
+    Set-Location -path "$myFolder"
+}
+
+
+
 function Get-FolderSize {
     param(
         [string]$Path
@@ -586,6 +612,7 @@ Set-Alias -Name lv -Value "ListVenvFolders" -Description "show venv folders and 
 Set-Alias -Name pspe -Value psProfileEdit -Description "edit the powershell profile"
 Set-Alias -Name psmenu -Value Main-Menu -Description "show Main Menu"
 Set-Alias -Name se -Value Select-VirtualEnvironment -Description "choose & activate *venv*"
+Set-Alias -Name secd -Value Select-VirtualEnvironmentCd -Description "choose & activate venv_* and cd to prj folder"
 Set-Alias -Name lla -Value Alias-lla -Description "shows file size in suitable units like ls -lah"
 
 
