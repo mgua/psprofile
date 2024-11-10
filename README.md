@@ -1,15 +1,43 @@
 # psprofile
 
-a tool to manage powershell aliases
-Marco Guardigli, october 2023
+A personal tool to manage powershell aliases, for windows command line power users.
 
-added jul 2024
-  le (list environments: list venv folders in current location, with sizes)
-  se (select environment: allows to choose and activate a venv)
+Marco Guardigli, october 2023.
+
+mgua@tomware.it
 
 
-Allows team definition and management of powershell aliases to automate tasks,
+added jul 2024:
+- le (list environments: list venv folders in current location, with sizes)
+- se (select environment: allows to choose and activate a venv)
+
+
+psprofile allows team level definition and management of powershell aliases to automate tasks,
 for windows users.
+
+## Usual Prerequirements:
+psprofile is an integration tool. 
+It simplifies and streamlines working in windows from powershell command line interface.
+the tools usual  are:
+- Windows operating system, with powershell interpreter
+- ohmyposh prompt 
+- nerdfonts
+- notepad++
+- neovim / vim
+- chocolatey package manager
+- winget package manager
+- microsoft visual studio code
+- windows terminal
+
+Read down for more details.
+
+
+## Caveats
+psprofile is a personal too. It is imperfect. It is a work in progress. 
+
+It is flexible, and requires customization for you use.
+It is powerful, and as any powerful tools, requires conscious use.
+
 
 ## Installation
 Open a powershell prompt and, from your home folder, execute the following commands
@@ -21,22 +49,29 @@ Open a powershell prompt and, from your home folder, execute the following comma
     pinstall
 ```
 
-Check the code for the defined aliases, and define yours
-once done, pinstall command will give you the command to put your profile.ps1 
-in your Documents folder and then it will be automatically loaded by powershell 
-once you open a prompt
+Check the code for the defined aliases, and define yours.
+Once done, _pinstall_ alias command will install your profile.ps1 in your windows profile, to have it automatically loaded by powershell 
+every time you open a command window.
 
-It can also be that PowerShell blocks running local scripts. 
-To solve that, set PowerShell to only require remote scripts to be signed using 
+It can be that PowerShell script execution is not allowed. 
+To authorize, execute the following line from a powershell prompt:
 
 ```
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
 ```
-Alternatively, the local script must be signed to be executed. 
+
+Alternatively, the profile.ps1 script must be signed to be executed. 
 see https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_signing?view=powershell-7.4
 
+The pinstall command is an alias, defined within profile.ps1. This alias performs profile installation, 
+copying the profile.ps1 script to the file specified by the $PROFILE environment variable, which is something like:
 
-## Command alias defined
+```
+C:\Users\{USERNAME}\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+```
+
+
+## Command alias defined (incomplete list. see code)
     pinstall    install profile.ps1 after edit
     la          list all defined aliases (List Alias)
     ga          list all defined aliases (Get Alias)
@@ -78,13 +113,32 @@ To edit the powershell profile, from windows, you can run the following command:
 ```
     notepad $PROFILE
 ```
+with this you edit the running profile. 
+it is usually better to edit the profile.ps1 downloaded from your fork, 
+and then execute pinstall from its folder.
 
 
-## ToDo
-I integrated a better menu generation and choice system, that uses cursor
+
+## News
+(oct 2024) I integrated a better menu generation and choice system, that uses cursor
 from github\hapylestat (see code)
 
-The new menu code is not operational yet.
+The new menu code is not operational yet everywhere.
+It is active in the _secd_ alias.
+
+(nov 2024) Improved documentation.
+
+
+## Nice to have list:
+- Documentation improvement
+- Delp menu
+- Integration with command line file manager, like mc or far
+- Integration with claude.ai computer use features.
+- better integration with OhMyPosh
+- better integration with git, and with its many options, that could be used via a menu-driven interface
+- better integration with local GNU tools, like find, grep, fd, ripgrep, fzf.
+
+
 
 
 
