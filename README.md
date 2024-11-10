@@ -7,10 +7,6 @@ Marco Guardigli, october 2023.
 mgua@tomware.it
 
 
-added jul 2024:
-- le (list environments: list venv folders in current location, with sizes)
-- se (select environment: allows to choose and activate a venv)
-
 
 psprofile allows team level definition and management of powershell aliases to automate tasks,
 for windows users.
@@ -72,29 +68,32 @@ C:\Users\{USERNAME}\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
 
 
 ## Command alias defined (incomplete list. see code)
-    pinstall    install profile.ps1 after edit
-    la          list all defined aliases (List Alias)
-    ga          list all defined aliases (Get Alias)
-    hed         edit hosts file in admin mode
-    her         launch hostedit in admin mode (to manage local wsl address resolution)
-    vi          launch neovim
-    vim         launch neovim
-    nvim        launch neovim
-    npp         launch notepad++
-    np          launch notepad++
-    cdh         cd to home
-    ll          ls -la
-    pspe        edit powershell profile
-    lv          list virtual environment (venv folders) with related sizes
-    se          select and activate a virtual environment
-    psmenu      show menu
-
-    
+```
+  - pinstall      install profile.ps1 after edit
+  - la            list all defined aliases (List Alias)
+  - ga            list all defined aliases (Get Alias)
+  - hed           edit hosts file in admin mode
+  - her           launch hostedit in admin mode (to manage local wsl address resolution)
+  - vi            launch neovim
+  - vim           launch neovim
+  - nvim          launch neovim
+  - npp           launch notepad++
+  - np            launch notepad++
+  - cdh           cd to home
+  - ll            ls -la
+  - pspe          edit powershell profile
+  - lv            list virtual environment (venv folders) with related sizes
+  - se            select and activate a virtual environment
+  - psmenu        show menu
+  - secd          select python virtual environment and cd to project folder 
+                  assumes venv folder names like .\venv_projectname
+                  being .\projectname the corresponding project folder
+```
 
 
 
 ### other tools
-We assume that some other prerequired tools are installed, being those referenced in the alias commands
+We assume that some prerequired tools are installed, being those referenced in the alias commands
 
 ```
     git client:     https://git-scm.com/
@@ -120,13 +119,19 @@ and then execute pinstall from its folder.
 
 
 ## News
-(oct 2024) I integrated a better menu generation and choice system, that uses cursor
-from github\hapylestat (see code)
 
-The new menu code is not operational yet everywhere.
-It is active in the _secd_ alias.
 
-(nov 2024) Improved documentation.
+(jul 2024):
+- le (list environments: list venv folders in current location, with sizes)
+- se (select environment: allows to choose and activate a venv)
+
+(oct 2024):
+- a better menu generation. Choice with cursor movement. 
+taken from github\hapylestat (see code)
+This new menu code is not operational everywhere. It works in _secd_ alias.
+
+(nov 2024):
+- Improved documentation.
 
 
 ## Nice to have list:
