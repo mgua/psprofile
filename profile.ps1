@@ -597,30 +597,44 @@ function Alias-lla {
 
 
 function Get-LinuxLs {
-	# added jan 20, 2025, associated to "ls" alias
     param (
-        [Parameter(Position=0)]
+        [Parameter(ValueFromRemainingArguments=$true)]
         [string[]]$Arguments
     )
     
     # Initialize default parameters
     $showHidden = $false
     $detailed = $false
+    $humanReadable = $false
     
     # Parse arguments if present
     if ($Arguments) {
         foreach ($arg in $Arguments) {
-            if ($arg -eq '-la' -or $arg -eq '-al') {
-                $showHidden = $true
-                $detailed = $true
+            # Handle combined or separate flags
+            if ($arg -match '^-') {
+                if ($arg -match 'l') { $detailed = $true }
+                if ($arg -match 'a') { $showHidden = $true }
+                if ($arg -match 'h') { $humanReadable = $true }
             }
-            # Add support for other common Linux ls flags
-            elseif ($arg -eq '-l') {
-                $detailed = $true
-            }
-            elseif ($arg -eq '-a') {
-                $showHidden = $true
-            }
+        }
+    }
+    
+    # Function to convert size to human readable format
+    function Format-FileSize {
+        param ([long]$size)
+        $suffix = "B", "K", "M", "G", "T", "P", "E"
+        $index = 0
+        while ($size -gt 1024 -and $index -lt ($suffix.Count - 1)) {
+            $size = $size / 1024
+            $index++
+        }
+        
+        # Format with proper rounding
+        if ($index -eq 0) {
+            return "{0,6}B" -f $size # Bytes don't need decimal places
+        }
+        else {
+            return "{0,5:N1}{1}" -f $size, $suffix[$index]
         }
     }
     
@@ -646,8 +660,13 @@ function Get-LinuxLs {
             $mode += if ($_.Mode -match 'x') {'x'} else {'-'}
             $mode += '------'  # Group and Others permissions (simplified)
             
-            # Format size to be right-aligned
-            $size = "{0,10}" -f $_.Length
+            # Format size based on -h flag
+            $size = if ($humanReadable) {
+                Format-FileSize $_.Length
+            }
+            else {
+                "{0,10}" -f $_.Length
+            }
             
             # Format last write time
             $time = $_.LastWriteTime.ToString("MMM dd HH:mm")
@@ -666,6 +685,7 @@ function Get-LinuxLs {
         $items | Select-Object -ExpandProperty Name
     }
 }
+
 
 
 function Get-GitStatus {
@@ -699,7 +719,7 @@ Set-Alias -Name se -Value Select-VirtualEnvironment -Description "choose & activ
 Set-Alias -Name secd -Value Select-VirtualEnvironmentCd -Description "choose & activate venv_* and cd to prj folder"
 Set-Alias -Name lla -Value Alias-lla -Description "shows file size in suitable units like ls -lah"
 
-Set-Alias -Name ls -Value Get-LinuxLs -Option AllScope -Description "emulates *nix ls"
+Set-Alias -Name ls -Value Get-LinuxLs -Option AllScope -Description "emulates *nix ls [-l -a -h]"
 
 Set-Alias -Name gst -Value Get-GitStatus -Option AllScope -Description "shortcut for git status [-s]"
 
