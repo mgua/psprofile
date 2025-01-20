@@ -596,6 +596,86 @@ function Alias-lla {
 }
 
 
+function Get-LinuxLs {
+	# added jan 20, 2025, associated to "ls" alias
+    param (
+        [Parameter(Position=0)]
+        [string[]]$Arguments
+    )
+    
+    # Initialize default parameters
+    $showHidden = $false
+    $detailed = $false
+    
+    # Parse arguments if present
+    if ($Arguments) {
+        foreach ($arg in $Arguments) {
+            if ($arg -eq '-la' -or $arg -eq '-al') {
+                $showHidden = $true
+                $detailed = $true
+            }
+            # Add support for other common Linux ls flags
+            elseif ($arg -eq '-l') {
+                $detailed = $true
+            }
+            elseif ($arg -eq '-a') {
+                $showHidden = $true
+            }
+        }
+    }
+    
+    # Build Get-ChildItem parameters
+    $params = @{}
+    if ($showHidden) {
+        $params.Force = $true  # Show hidden files
+    }
+    
+    # Get items
+    $items = Get-ChildItem @params
+    
+    # Display items
+    if ($detailed) {
+        $items | ForEach-Object {
+            # Create Linux-style permission string
+            $mode = switch ($_.Mode) {
+                'd*' { 'd' }
+                default { '-' }
+            }
+            $mode += if ($_.Mode -match 'r') {'r'} else {'-'}
+            $mode += if ($_.Mode -match 'w') {'w'} else {'-'}
+            $mode += if ($_.Mode -match 'x') {'x'} else {'-'}
+            $mode += '------'  # Group and Others permissions (simplified)
+            
+            # Format size to be right-aligned
+            $size = "{0,10}" -f $_.Length
+            
+            # Format last write time
+            $time = $_.LastWriteTime.ToString("MMM dd HH:mm")
+            
+            # Output in ls -l format
+            "{0}  1 {1}  {2} {3}  {4} {5}" -f $mode, 
+                                             $_.Owner, 
+                                             $_.Group, 
+                                             $size, 
+                                             $time, 
+                                             $_.Name
+        }
+    }
+    else {
+        # Simple listing
+        $items | Select-Object -ExpandProperty Name
+    }
+}
+
+
+function Get-GitStatus {
+    param(
+        [Parameter(ValueFromRemainingArguments=$true)]
+        $args
+    )
+    git status $args
+}
+
 
 Set-Alias -Name pinstall -Value Profile-Install -Description "Get Install Instructions"
 Set-Alias -Name la -Value Get-Alias -Description "List command Aliases defined in Powershell"
@@ -619,6 +699,9 @@ Set-Alias -Name se -Value Select-VirtualEnvironment -Description "choose & activ
 Set-Alias -Name secd -Value Select-VirtualEnvironmentCd -Description "choose & activate venv_* and cd to prj folder"
 Set-Alias -Name lla -Value Alias-lla -Description "shows file size in suitable units like ls -lah"
 
+Set-Alias -Name ls -Value Get-LinuxLs -Option AllScope -Description "emulates *nix ls"
+
+Set-Alias -Name gst -Value Get-GitStatus -Option AllScope -Description "shortcut for git status [-s]"
 
 # the following line invokes oh-my-posh
 # see https://ohmyposh.dev/
