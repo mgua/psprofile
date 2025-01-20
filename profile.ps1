@@ -705,7 +705,7 @@ Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in a
 # Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
 # Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
 Set-Alias -Name nvim -Value Launch-Nvim -Description "Launch neovim"
-#Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
+Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name np -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name ex -Value Launch-Explorer
