@@ -598,10 +598,15 @@ Set-Alias -Name la -Value Get-Alias -Description "List command Aliases defined i
 Set-Alias -Name ga -Value Get-Alias -Description "List command Aliases defined in Powershell"
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
 Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
+<<<<<<< HEAD
 # Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
 # Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
+=======
+#Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
+#Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
+>>>>>>> ca104d1acac687b08d9fc41c4a852fa836d66aaa
 Set-Alias -Name nvim -Value Launch-Nvim -Description "Launch neovim"
-Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
+#Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name np -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name ex -Value Launch-Explorer
@@ -622,7 +627,23 @@ Set-Alias -Name lla -Value Alias-lla -Description "shows file size in suitable u
 # ancillary packets could be added
 #
 # oh-my-posh init pwsh | Invoke-Expression
-& ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\jandedobbeleer.omp.json" --print) -join "`n"))
+# & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\jandedobbeleer.omp.json" --print) -join "`n"))
+& ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\slimfat.omp.json" --print) -join "`n"))
 Write-Host 'psprofile: Powershell profile manager. psmenu for help. See: https://github.com/mgua/psprofile'
 
-
+# as of jan 17 2025 the posh themes supporting 
+#	the python environment
+#	the git branch
+#	the local path
+#
+#	are:
+#		tonybaloney
+#		space
+#		smothie
+#		rudolfs-dark
+#		rudolfs-light
+#		powerlevel10k_modern
+#		poshmon
+#		slim
+#		slimfat		(slimfat.omp.json)
+#
