@@ -602,13 +602,8 @@ Set-Alias -Name la -Value Get-Alias -Description "List command Aliases defined i
 Set-Alias -Name ga -Value Get-Alias -Description "List command Aliases defined in Powershell"
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
 Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
-<<<<<<< HEAD
 # Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
 # Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
-=======
-#Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
-#Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
->>>>>>> ca104d1acac687b08d9fc41c4a852fa836d66aaa
 Set-Alias -Name nvim -Value Launch-Nvim -Description "Launch neovim"
 #Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
