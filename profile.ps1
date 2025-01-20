@@ -21,6 +21,10 @@
 #	add mc alias for GNU Midnight Commander (choco install mc)
 #	add secd alias to choose environment and change current folder to project folder
 #
+# jan 20 2025: mgua
+#	chenged default oh-my-posh prompt to have python environment correctly shown
+#	(switchd to slimfat theme)
+#
 # see https://github.com/mgua/psprofile.git
 #
 # save it in the file name specified by the $PROFILE variable
