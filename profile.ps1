@@ -25,6 +25,11 @@
 #	chenged default oh-my-posh prompt to have python environment correctly shown
 #	(switchd to slimfat theme)
 #
+# jul 17 2025: mgua
+# 	added support for cygwin launch within powershell session. this allows to run posix
+# 	commands within the same CLI, with lots of flexibility
+# 	(alias is cyg)
+#
 # see https://github.com/mgua/psprofile.git
 #
 # save it in the file name specified by the $PROFILE variable
@@ -429,6 +434,19 @@ function Launch-Explorer {
 		}
 }
 
+function Launch-CygwinBash {
+	$command = "`"c:\cygwin64\bin\bash`""
+	$parameters = "-l" -join ' '
+		if ($parameters) {
+			Start-Process -FilePath $command -ArgumentList $parameters -NoNewWindow -Wait
+		} else {
+			# if no parameters are passed open current folder
+			Start-Process -FilePath $command -ArgumentList "." -NoNewWindow -Wait
+		}
+}
+
+
+
 function Launch-MidnightCommander {
 	$command = "`"C:\Program Files (x86)\Midnight Commander\mc.exe`""
 	$parameters = $args -join ' '
@@ -709,6 +727,9 @@ Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midn
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name np -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name ex -Value Launch-Explorer
+
+Set-Alias -Name cyg -Value Launch-CygwinBash -Description "Launch Cygwin BASH from c:/cygwin64/bin/bash"
+
 #Set-Alias -Name cdh -Value Alias-cdh -Description "Alias cdh: go to current user home directory"
 Set-Alias -Name cdh -Value Alias-cdh -Description "cd to current user home folder" 
 Set-Alias -Name ll -Value lsll -Description " dir "
