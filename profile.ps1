@@ -30,6 +30,9 @@
 # 	commands within the same CLI, with lots of flexibility
 # 	(alias is cyg)
 #
+# 	update midnight commander default path for 64bit version *not x86*
+#
+#
 # see https://github.com/mgua/psprofile.git
 #
 # save it in the file name specified by the $PROFILE variable
@@ -448,7 +451,9 @@ function Launch-CygwinBash {
 
 
 function Launch-MidnightCommander {
-	$command = "`"C:\Program Files (x86)\Midnight Commander\mc.exe`""
+	#$command = "`"C:\Program Files (x86)\Midnight Commander\mc.exe`""
+	# jul 17 2025 switched to defaul 64 bit
+	$command = "`"C:\Program Files\Midnight Commander\mc.exe`""
 	$parameters = $args -join ' '
 		if ($parameters) {
 			Start-Process -FilePath $command -ArgumentList $parameters
