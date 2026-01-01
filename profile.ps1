@@ -32,7 +32,7 @@
 #
 # 	update midnight commander default path for 64bit version *not x86*
 #
-# jan 01 2026: mgua+claude
+# jan 26 2026: mgua
 #	improved nvim invocation with two approaches:
 #	  1. Launch-NvimLocal: runs in current shell, preserves venv/PATH, works over SSH
 #	     (aliases: nv, nvim, vi, vim)
@@ -60,6 +60,9 @@
 #
 # Unauthorized access error may require execution of:
 #	Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# 	If you still get error you may need to execute 
+#	Unblock-File -Path .\profile.ps1
+#	from the <user>\psprofile folder
 #
 # see https://stackoverflow.com/questions/24914589/how-to-create-permanent-powershell-aliases
 #
@@ -769,6 +772,34 @@ function Get-LinuxLs {
 }
 
 
+function Set-AliasSafe {
+    # Helper function to safely set aliases, handling AllScope and ReadOnly options
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Name,
+        [Parameter(Mandatory=$true)]
+        [string]$Value,
+        [string]$Description = ""
+    )
+    
+    # Check if alias already exists
+    $existingAlias = Get-Alias -Name $Name -ErrorAction SilentlyContinue
+    
+    if ($existingAlias) {
+        # Check if it has AllScope option
+        if ($existingAlias.Options -match 'AllScope') {
+            # Must preserve AllScope when redefining
+            Set-Alias -Name $Name -Value $Value -Description $Description -Option AllScope -Force -Scope Global
+        } else {
+            # Normal alias, just force override
+            Set-Alias -Name $Name -Value $Value -Description $Description -Force
+        }
+    } else {
+        # New alias, set normally
+        Set-Alias -Name $Name -Value $Value -Description $Description
+    }
+}
+
 
 function Get-GitStatus {
     param(
@@ -784,14 +815,14 @@ Set-Alias -Name la -Value Get-Alias -Description "List command Aliases defined i
 Set-Alias -Name ga -Value Get-Alias -Description "List command Aliases defined in Powershell"
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
 Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
-# Local nvim invocation (preserves context, works over SSH)
-#Set-Alias -Name vi -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
-#Set-Alias -Name vim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
-Set-Alias -Name nvim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)" -Force
-Set-Alias -Name nv -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)" -Force
+# Local nvim invocation (preserves context, works over SSH) - using Set-AliasSafe to handle AllScope
+Set-AliasSafe -Name vi -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+Set-AliasSafe -Name vim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+Set-AliasSafe -Name nvim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+Set-AliasSafe -Name nv -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
 # New window nvim invocation (clean environment, won't work over SSH)
-Set-Alias -Name nvimn -Value Launch-NvimNew -Description "Launch neovim in new window/tab" -Force
-Set-Alias -Name nvn -Value Launch-NvimNew -Description "Launch neovim in new window/tab" -Force
+Set-AliasSafe -Name nvim-new -Value Launch-NvimNew -Description "Launch neovim in new window/tab"
+Set-AliasSafe -Name nv-new -Value Launch-NvimNew -Description "Launch neovim in new window/tab"
 Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name np -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
