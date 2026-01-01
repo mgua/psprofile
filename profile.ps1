@@ -785,13 +785,13 @@ Set-Alias -Name ga -Value Get-Alias -Description "List command Aliases defined i
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
 Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
 # Local nvim invocation (preserves context, works over SSH)
-Set-Alias -Name vi -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
-Set-Alias -Name vim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
-Set-Alias -Name nvim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
-Set-Alias -Name nv -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+#Set-Alias -Name vi -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+#Set-Alias -Name vim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+Set-Alias -Name nvim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)" -Force
+Set-Alias -Name nv -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)" -Force
 # New window nvim invocation (clean environment, won't work over SSH)
-Set-Alias -Name nvim-new -Value Launch-NvimNew -Description "Launch neovim in new window/tab"
-Set-Alias -Name nv-new -Value Launch-NvimNew -Description "Launch neovim in new window/tab"
+Set-Alias -Name nvimn -Value Launch-NvimNew -Description "Launch neovim in new window/tab" -Force
+Set-Alias -Name nvn -Value Launch-NvimNew -Description "Launch neovim in new window/tab" -Force
 Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name np -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
