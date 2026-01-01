@@ -408,16 +408,17 @@ function Launch-NvimLocal {
 		[string[]]$Arguments
 	)
 	
-	# Find nvim executable
-	$nvimCmd = Get-Command nvim -ErrorAction SilentlyContinue
+	# Get the actual nvim EXECUTABLE, not any alias
+	$nvimCmd = Get-Command nvim -CommandType Application -ErrorAction SilentlyContinue
 	
 	if (-not $nvimCmd) {
-		Write-Host "Error: nvim not found in PATH" -ForegroundColor Red
+		Write-Host "Error: nvim executable not found in PATH" -ForegroundColor Red
 		return
 	}
 	
-	# Execute nvim directly in current shell with proper argument forwarding
-	& $nvimCmd.Source @Arguments
+	# Store the path and execute
+	$nvimPath = $nvimCmd.Path
+	& $nvimPath @Arguments
 }
 
 
@@ -441,20 +442,20 @@ function Launch-NvimNew {
 		return
 	}
 	
-	# Find nvim executable
-	$nvimPath = (Get-Command nvim -ErrorAction SilentlyContinue).Source
+	# Get the actual nvim EXECUTABLE, not any alias
+	$nvimCmd = Get-Command nvim -CommandType Application -ErrorAction SilentlyContinue
 	
-	if (-not $nvimPath) {
-		Write-Host "Error: nvim not found in PATH" -ForegroundColor Red
+	if (-not $nvimCmd) {
+		Write-Host "Error: nvim executable not found in PATH" -ForegroundColor Red
 		return
 	}
+	
+	$nvimPath = $nvimCmd.Path
 	
 	# Properly escape and quote arguments for passing to new shell
 	$escapedArgs = @()
 	foreach ($arg in $Arguments) {
-		# Handle arguments with spaces, quotes, or special characters
 		if ($arg -match '[\s"'']') {
-			# Escape internal quotes and wrap in double quotes
 			$escaped = $arg -replace '"', '`"'
 			$escapedArgs += "`"$escaped`""
 		} else {
@@ -466,7 +467,6 @@ function Launch-NvimNew {
 	# Try Windows Terminal first (if available)
 	if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
 		Write-Host "Launching nvim in new Windows Terminal tab..." -ForegroundColor Green
-		# -w 0 uses current window, nt creates new tab
 		Start-Process wt.exe -ArgumentList "-w 0 nt pwsh.exe -NoExit -Command `"& '$nvimPath' $argString`""
 	} 
 	# Fall back to new PowerShell window
@@ -476,6 +476,7 @@ function Launch-NvimNew {
 		Start-Process pwsh.exe -ArgumentList "-NoExit -Command `"$command`""
 	}
 }
+
 
 function Launch-NotepadPlusPlus {
 	$command = "`"c:\program files\notepad++\notepad++.exe`""
