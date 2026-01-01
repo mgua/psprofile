@@ -32,6 +32,14 @@
 #
 # 	update midnight commander default path for 64bit version *not x86*
 #
+# jan 01 2026: mgua+claude
+#	improved nvim invocation with two approaches:
+#	  1. Launch-NvimLocal: runs in current shell, preserves venv/PATH, works over SSH
+#	     (aliases: nv, nvim, vi, vim)
+#	  2. Launch-NvimNew: opens in new window/tab for clean environment
+#	     (aliases: nvim-new, nv-new)
+#	proper argument forwarding using @Arguments for all nvim options
+#
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -387,31 +395,82 @@ function Get-ExecutablePath {
 # 
 
 
-function Launch-Nvim {
-	# nvim executable can be in different locations
-	# and we want to run it possibly in windows terminal
-	#	$command = "`"c:\program files\Neovim\bin\nvim.exe`""
-	#	$command = "`"c:\Users\mguardigli\AppData\Local\Programs\Neovim\bin\nvim.exe`""
-	#$mycmd = "`"nvim`"" (this quoting suddenly stopped working)on 12 oct 2023)
-	$mycmd = "nvim"
-	$cmd = where.exe $mycmd
-	# if available, run in windows terminal (wt), else cmd
-	# this horror code appears needed to avoid launching a not wt window
-	if ( Get-Command "wt" -ErrorAction SilentlyContinue ) {
-		$command = "wt"
-		$cargs = "$cmd $args"
-	} else {
-		$command = "cmd"
-		$cargs = "/c $cmd $args"
-		# cmd /c c:\nvimpath\nvim.exe $args
+function Launch-NvimLocal {
+	# Launch nvim in the current shell context
+	# This preserves Python venv, environment variables, and works over SSH
+	# mgua - jan 2026
+	
+	param(
+		[Parameter(ValueFromRemainingArguments=$true)]
+		[string[]]$Arguments
+	)
+	
+	# Find nvim executable
+	$nvimCmd = Get-Command nvim -ErrorAction SilentlyContinue
+	
+	if (-not $nvimCmd) {
+		Write-Host "Error: nvim not found in PATH" -ForegroundColor Red
+		return
 	}
-	Write-Host "command: [$command] cargs: [$cargs]"
-	$parameters = $cargs -join ' '
-	if ($parameters) {
-		# BEWARE using -NoNewWindow option causes terminal to malfunction
-		Start-Process -FilePath $command -ArgumentList $parameters
-	} else {
-		Start-Process -FilePath $command
+	
+	# Execute nvim directly in current shell with proper argument forwarding
+	& $nvimCmd.Source @Arguments
+}
+
+
+function Launch-NvimNew {
+	# Launch nvim in a new shell/window
+	# Useful for clean environment, but won't work over SSH
+	# mgua - jan 2026
+	
+	param(
+		[Parameter(ValueFromRemainingArguments=$true)]
+		[string[]]$Arguments
+	)
+	
+	# Check if we're in an SSH session
+	if ($env:SSH_CLIENT -or $env:SSH_CONNECTION -or $env:SSH_TTY) {
+		Write-Host "Warning: SSH session detected. Cannot open new window." -ForegroundColor Yellow
+		Write-Host "         Falling back to local invocation (use 'nv' or 'nvim' for SSH)." -ForegroundColor Yellow
+		Write-Host ""
+		# Fall back to local invocation
+		Launch-NvimLocal @Arguments
+		return
+	}
+	
+	# Find nvim executable
+	$nvimPath = (Get-Command nvim -ErrorAction SilentlyContinue).Source
+	
+	if (-not $nvimPath) {
+		Write-Host "Error: nvim not found in PATH" -ForegroundColor Red
+		return
+	}
+	
+	# Properly escape and quote arguments for passing to new shell
+	$escapedArgs = @()
+	foreach ($arg in $Arguments) {
+		# Handle arguments with spaces, quotes, or special characters
+		if ($arg -match '[\s"'']') {
+			# Escape internal quotes and wrap in double quotes
+			$escaped = $arg -replace '"', '`"'
+			$escapedArgs += "`"$escaped`""
+		} else {
+			$escapedArgs += $arg
+		}
+	}
+	$argString = $escapedArgs -join ' '
+	
+	# Try Windows Terminal first (if available)
+	if (Get-Command wt.exe -ErrorAction SilentlyContinue) {
+		Write-Host "Launching nvim in new Windows Terminal tab..." -ForegroundColor Green
+		# -w 0 uses current window, nt creates new tab
+		Start-Process wt.exe -ArgumentList "-w 0 nt pwsh.exe -NoExit -Command `"& '$nvimPath' $argString`""
+	} 
+	# Fall back to new PowerShell window
+	else {
+		Write-Host "Launching nvim in new PowerShell window..." -ForegroundColor Green
+		$command = "& '$nvimPath' $argString"
+		Start-Process pwsh.exe -ArgumentList "-NoExit -Command `"$command`""
 	}
 }
 
@@ -497,7 +556,7 @@ function lsll {
 function psProfileEdit {
 	# poweshell profile edit: allow editing this file and update
 	Set-Location -Path $env:USERPROFILE"\psprofile"
-	& nvim profile.ps1
+	Launch-NvimLocal profile.ps1
 	Write-Host "when editing is done, run pinstall from this folder and execute the suggested copy command"
 	Write-Host '"consider executing "git add ." , "git commit -m..." and "git push" to update the repos'
 	Write-Host 'run ". .\profile.ps1" to activate the new aliases in the current session'
@@ -725,9 +784,14 @@ Set-Alias -Name la -Value Get-Alias -Description "List command Aliases defined i
 Set-Alias -Name ga -Value Get-Alias -Description "List command Aliases defined in Powershell"
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
 Set-Alias -Name her -Value Admin-Run-HostEdit -Description "Launch hostedit in admin mode"
-# Set-Alias -Name vi -Value Launch-Nvim -Description "Launch neovim"
-# Set-Alias -Name vim -Value Launch-Nvim -Description "Launch neovim"
-Set-Alias -Name nvim -Value Launch-Nvim -Description "Launch neovim"
+# Local nvim invocation (preserves context, works over SSH)
+Set-Alias -Name vi -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+Set-Alias -Name vim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+Set-Alias -Name nvim -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+Set-Alias -Name nv -Value Launch-NvimLocal -Description "Launch neovim locally (preserves context)"
+# New window nvim invocation (clean environment, won't work over SSH)
+Set-Alias -Name nvim-new -Value Launch-NvimNew -Description "Launch neovim in new window/tab"
+Set-Alias -Name nv-new -Value Launch-NvimNew -Description "Launch neovim in new window/tab"
 Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name np -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
