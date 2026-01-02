@@ -1,4 +1,4 @@
-﻿# this is my powershell alias file
+# this is my powershell alias file
 # mgua@tomware.it
 # october-november 2023
 #
@@ -39,6 +39,12 @@
 #	  2. Launch-NvimNew: opens in new window/tab for clean environment
 #	     (aliases: nvim-new, nv-new)
 #	proper argument forwarding using @Arguments for all nvim options
+#	
+#	because of an error in the env variable $env:POSH_THEMES_PATH, we resorted to
+#	recommend to clone the whole oh-my-posh repo in the user home folder
+#		mkdir c:\Users\<user>\oh-my-posh
+#		cd c:\Users\<user>\oh-my-posh
+#		git clone https://github.com/JanDeDobbeleer/oh-my-posh.git .
 #
 #
 # see https://github.com/mgua/psprofile.git
@@ -852,7 +858,14 @@ Set-Alias -Name gst -Value Get-GitStatus -Option AllScope -Description "shortcut
 #
 # oh-my-posh init pwsh | Invoke-Expression
 # & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\jandedobbeleer.omp.json" --print) -join "`n"))
-& ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\slimfat.omp.json" --print) -join "`n"))
+# & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\slimfat.omp.json" --print) -join "`n"))
+# C:\Users\<user>\AppData\Local\Programs\oh-my-posh\themes\
+# "$env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\slimfat.omp.json"
+# & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\slimfat.omp.json" --print) -join "`n"))
+#
+# we assume that oh-my-posh has been cloned in ~/oh-my-posh/ from https://github.com/JanDeDobbeleer/oh-my-posh.git
+& ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:USERPROFILE\oh-my-posh\themes\slimfat.omp.json" --print) -join "`n"))
+#
 Write-Host 'psprofile: Powershell profile manager. psmenu for help. See: https://github.com/mgua/psprofile'
 
 # as of jan 17 2025 the posh themes supporting 
