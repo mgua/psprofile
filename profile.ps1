@@ -32,7 +32,7 @@
 #
 # 	update midnight commander default path for 64bit version *not x86*
 #
-# jan 26 2026: mgua
+# dec 26 2025: mgua
 #	improved nvim invocation with two approaches:
 #	  1. Launch-NvimLocal: runs in current shell, preserves venv/PATH, works over SSH
 #	     (aliases: nv, nvim, vi, vim)
