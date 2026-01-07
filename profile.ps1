@@ -46,6 +46,9 @@
 #		cd c:\Users\<user>\oh-my-posh
 #		git clone https://github.com/JanDeDobbeleer/oh-my-posh.git .
 #
+# jan 07 2026: mgua
+#	improved Launch-MidnightCommander: if mc.exe not found, fallback to far.exe
+#	both mc and far now launch in the current working directory
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -73,7 +76,7 @@
 # see https://stackoverflow.com/questions/24914589/how-to-create-permanent-powershell-aliases
 #
 # check last access time of a folder/file
-# Get-ChildItem | Where-Object {$_.psiscontainer} | ForEach-Object {“{0}`t{1}” -f $_.name,$_.lastaccesstime}
+# Get-ChildItem | Where-Object {$_.psiscontainer} | ForEach-Object {"{0}`t{1}" -f $_.name,$_.lastaccesstime}
 #
 #
 # WANT TO DO:
@@ -520,16 +523,86 @@ function Launch-CygwinBash {
 
 
 function Launch-MidnightCommander {
-	#$command = "`"C:\Program Files (x86)\Midnight Commander\mc.exe`""
-	# jul 17 2025 switched to defaul 64 bit
-	$command = "`"C:\Program Files\Midnight Commander\mc.exe`""
-	$parameters = $args -join ' '
-		if ($parameters) {
-			Start-Process -FilePath $command -ArgumentList $parameters
-		} else {
-			# if no parameters are passed open current folder
-			Start-Process -FilePath $command -ArgumentList "."
+	# jan 07 2026: mgua
+	# improved to fallback to FAR Manager if mc.exe is not available
+	# both mc and far now launch in the current working directory
+	
+	# Define possible paths for Midnight Commander
+	$mcPaths = @(
+		"C:\Program Files\Midnight Commander\mc.exe",
+		"C:\Program Files (x86)\Midnight Commander\mc.exe"
+	)
+	
+	# Define possible paths for FAR Manager
+	$farPaths = @(
+		"C:\Program Files\Far Manager\far.exe",
+		"C:\Program Files (x86)\Far Manager\far.exe"
+	)
+	
+	# Get current working directory
+	$workingDir = (Get-Location).Path
+	
+	# Try to find mc.exe
+	$mcExe = $null
+	foreach ($path in $mcPaths) {
+		if (Test-Path $path) {
+			$mcExe = $path
+			break
 		}
+	}
+	
+	# Also check if mc is in PATH
+	if (-not $mcExe) {
+		$mcCmd = Get-Command mc.exe -ErrorAction SilentlyContinue
+		if ($mcCmd) {
+			$mcExe = $mcCmd.Path
+		}
+	}
+	
+	# If mc found, use it
+	if ($mcExe) {
+		$parameters = $args -join ' '
+		if ($parameters) {
+			Start-Process -FilePath $mcExe -ArgumentList $parameters -WorkingDirectory $workingDir -NoNewWindow -Wait
+		} else {
+			Start-Process -FilePath $mcExe -WorkingDirectory $workingDir -NoNewWindow -Wait
+		}
+		return
+	}
+	
+	# mc not found, try FAR Manager
+	$farExe = $null
+	foreach ($path in $farPaths) {
+		if (Test-Path $path) {
+			$farExe = $path
+			break
+		}
+	}
+	
+	# Also check if far is in PATH
+	if (-not $farExe) {
+		$farCmd = Get-Command far.exe -ErrorAction SilentlyContinue
+		if ($farCmd) {
+			$farExe = $farCmd.Path
+		}
+	}
+	
+	# If FAR found, use it
+	if ($farExe) {
+		Write-Host "mc.exe not found, using FAR Manager instead" -ForegroundColor Yellow
+		$parameters = $args -join ' '
+		if ($parameters) {
+			Start-Process -FilePath $farExe -ArgumentList $parameters -WorkingDirectory $workingDir -NoNewWindow -Wait
+		} else {
+			Start-Process -FilePath $farExe -WorkingDirectory $workingDir -NoNewWindow -Wait
+		}
+		return
+	}
+	
+	# Neither found
+	Write-Host "Error: Neither Midnight Commander (mc.exe) nor FAR Manager (far.exe) found." -ForegroundColor Red
+	Write-Host "Install mc with: choco install mc" -ForegroundColor Yellow
+	Write-Host "Install FAR with: choco install far" -ForegroundColor Yellow
 }
 
 
@@ -550,122 +623,146 @@ function Admin-Run-HostEdit {
 	Start-Process -FilePath $command -ArgumentList $parameters -Verb RunAs 
 }
 
-function Alias-cdh {
-	# cd to home directory
-	Set-Location -Path $env:USERPROFILE
-} 
-
-function ProfileEdit {
-	& notepad.exe $profile
-}
-
-function lsll {
-	& Get-ChildItem 
-}
 
 function psProfileEdit {
-	# poweshell profile edit: allow editing this file and update
-	Set-Location -Path $env:USERPROFILE"\psprofile"
-	Launch-NvimLocal profile.ps1
-	Write-Host "when editing is done, run pinstall from this folder and execute the suggested copy command"
-	Write-Host '"consider executing "git add ." , "git commit -m..." and "git push" to update the repos'
-	Write-Host 'run ". .\profile.ps1" to activate the new aliases in the current session'
+	param()
+	notepad.exe "$PROFILE"
 }
 
-function DeactivateEnvironment {
-    # Check for common environment managers
-    if ($env:VIRTUAL_ENV) {
-        Write-Host "Virtual environment is active: $($env:VIRTUAL_ENV)"
-        if ($env:CONDA_PREFIX) {
-            # Write-Host "Deactivating conda environment..."
-            conda deactivate
-        } else {
-            # Write-Host "Deactivating venv/virtualenv..."
-            deactivate
-        }
-    } else {
-        Write-Host "No supported environment manager detected: Assuming no environment is active."
-        return
-    }
+
+
+function Alias-cdh {
+    Set-Location -Path $env:USERPROFILE 
+    Get-Location
+}
+
+
+function lsll {
+   dir -Force
 }
 
 
 function Select-VirtualEnvironment {
-    # list folders with *venv* in their name and allow to choose one switching to it
-    $venvFolders = Get-ChildItem -Directory -Filter "*venv*"
+    # Function to select and activate a Python virtual environment
+    # Lists *venv* folders in the user's home directory
+    # Uses the built-in Menu function for selection
+    # Activates the selected environment
+
+    # Find *venv* folders in user home directory
+    $venvFolders = @(Get-ChildItem -Path $env:USERPROFILE -Directory -Filter "*venv*" | Select-Object -ExpandProperty Name)
+
     if ($venvFolders.Count -eq 0) {
-        Write-Host "No folders found with 'venv' in the name."
+        Write-Host "No virtual environment folders found in $env:USERPROFILE" -ForegroundColor Yellow
         return
     }
-    $myvenv = Menu $venvFolders "Select venv"
-    $myvenvdir = $venvFolders[$myvenv]
-    # Write-Host "You Selected $myvenv : $myvenvdir"
-    $activatecmd = "$($myvenvdir)\Scripts\Activate.ps1"
-    DeactivateEnvironment
-    # Write-Host "activating venv environment with cmd = [$activatecmd]"
-    & $activatecmd
-    Write-Host "VIRTUAL_ENV = [$env:VIRTUAL_ENV]"
+
+    # Use the Menu function for selection
+    Write-Host ""
+    Write-Host "Virtual Environments in $env:USERPROFILE" -ForegroundColor Cyan
+    $selection = Menu $venvFolders "Select Environment"
+
+    # Get the selected folder name
+    $selectedEnv = $venvFolders[$selection]
+    $activateScript = Join-Path $env:USERPROFILE $selectedEnv "Scripts\Activate.ps1"
+
+    if (Test-Path $activateScript) {
+        # Deactivate current environment if one is active
+        if ($env:VIRTUAL_ENV) {
+            Write-Host "Deactivating current environment: $env:VIRTUAL_ENV" -ForegroundColor Yellow
+            deactivate
+        }
+        
+        Write-Host "Activating: $selectedEnv" -ForegroundColor Green
+        & $activateScript
+    } else {
+        Write-Host "Activate script not found at: $activateScript" -ForegroundColor Red
+    }
 }
 
 
 function Select-VirtualEnvironmentCd {
-    # list folders with *venv* in their name and allow to choose one switching to it
-    # then changes the current folder to the code folder
-    # the code folder is the folder with same name without initial "venv_"
-    $venvFolders = Get-ChildItem -Directory -Filter "venv_*"
+    # Function to select and activate a Python virtual environment
+    # Lists venv_* folders in the user's home directory
+    # Uses the built-in Menu function for selection
+    # Activates the selected environment
+    # changes current folder to the project folder if present
+
+    # Find venv_* folders in user home directory (venv_prjname<N>)
+    $venvFolders = @(Get-ChildItem -Path $env:USERPROFILE -Directory -Filter "venv_*" | Select-Object -ExpandProperty Name)
+
     if ($venvFolders.Count -eq 0) {
-        Write-Host "No folders found with name beginning with venv_ "
+        Write-Host "No virtual environment (venv_*) folders found in $env:USERPROFILE" -ForegroundColor Yellow
         return
     }
-    $myvenv = Menu $venvFolders "Select venv"
-    $myvenvdir = $venvFolders[$myvenv]
-    # Write-Host "You Selected $myvenv : $myvenvdir"
-    $activatecmd = "$($myvenvdir)\Scripts\Activate.ps1"
-    DeactivateEnvironment
-    # Write-Host "activating venv environment with cmd = [$activatecmd]"
-    & $activatecmd
-    Write-Host "VIRTUAL_ENV = [$env:VIRTUAL_ENV]"
-    #
-    # now we cd to the project folder
-    $myFolder = $myvenvdir -replace 'venv_', ''		# remove "venv_" from path
-    Set-Location -path "$myFolder"
+
+    # Use the Menu function for selection
+    Write-Host ""
+    Write-Host "Virtual Environments venv_* in $env:USERPROFILE" -ForegroundColor Cyan
+    $selection = Menu $venvFolders "Select Environment"
+
+    # Get the selected folder name (venv_<envname>)
+    $selectedEnv = $venvFolders[$selection]
+    $activateScript = Join-Path $env:USERPROFILE $selectedEnv "Scripts\Activate.ps1"
+    $projFolder = $selectedEnv -replace 'venv_', ''
+    $projFolderPath = Join-Path $env:USERPROFILE "prj" $projFolder
+
+    if (Test-Path $activateScript) {
+        # Deactivate current environment if one is active
+        if ($env:VIRTUAL_ENV) {
+            Write-Host "Deactivating current environment: $env:VIRTUAL_ENV" -ForegroundColor Yellow
+            deactivate
+        }
+        
+        Write-Host "Activating: $selectedEnv" -ForegroundColor Green
+        & $activateScript
+    } else {
+        Write-Host "Activate script not found at: $activateScript" -ForegroundColor Red
+    }
+    if (Test-Path $projFolderPath) {
+        Write-Host "Going to Project Folder: $projFolderPath" -ForegroundColor Green
+        Set-Location -Path $projFolderPath 
+        Get-Location
+    } else {
+        Write-Host "Project Folder not found: $projFolderPath" -ForegroundColor Red
+    }
+    
 }
-
-
-
-function Get-FolderSize {
-    param(
-        [string]$Path
-    )
-    $size = Get-ChildItem $Path -Recurse | Measure-Object -Property Length -Sum
-    $sizeInBytes = $size.Sum
-    # Convert bytes to megabytes for better readability
-    $sizeInMB = $sizeInBytes / 1MB
-    # Write-Host "Total size of '$Path': $($sizeInMB:F2) MB"
-    return $sizeInMB
-}
-
 
 function ListVenvFolders {
-    # list folders with *venv* in their name and show disk size
-    $venvFolders = Get-ChildItem -Directory -Filter "*venv*"
-    if ($venvFolders.Count -eq 0) {
-        Write-Host "No folders found with 'venv' in the name."
-       return
+    param (
+        [string]$Path = $env:USERPROFILE
+    )
+
+    # Get all directories matching *venv* at the specified path
+    $venvFolders = Get-ChildItem -Path $Path -Directory -Filter "*venv*" -ErrorAction SilentlyContinue
+
+    if (-not $venvFolders) {
+        Write-Host "No directories matching '*venv*' found at path: $Path"
+        return
     }
-    foreach ($venvf in $venvFolders) { 
-        $fsize = Get-FolderSize -Path $venvf.Fullname
-        $fsize_approx = "{0:N0}"  -f $fsize
-        Write-Host "$($venvf.Name):`t`t $fsize_approx" 
+
+    foreach ($folder in $venvFolders) {
+        # Calculate the size of the folder
+        $folderSize = (Get-ChildItem -Path $folder.FullName -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+
+        # Convert size to a human-readable format
+        $sizeInMB = "{0:N2} MB" -f ($folderSize / 1MB)
+        $sizeInGB = "{0:N2} GB" -f ($folderSize / 1GB)
+
+        # Display the folder name and its size
+        if ($folderSize -ge 1GB) {
+            Write-Host "$($folder.Name): $sizeInGB"
+        } else {
+            Write-Host "$($folder.Name): $sizeInMB"
+        }
     }
 }
 
 
+# Function to get file size in human-readable format
 function Get-FileSizeString {
-    # this is used in lla alias
-    # mgua 2024 08 16 (thanks gemini)
-    param(
-        [int64]$sizeInBytes
+    param (
+        [long]$sizeInBytes
     )
 
     $sizeKB = $sizeInBytes / 1KB
@@ -830,7 +927,7 @@ Set-AliasSafe -Name nv -Value Launch-NvimLocal -Description "Launch neovim local
 # New window nvim invocation (clean environment, won't work over SSH)
 Set-AliasSafe -Name nvim-new -Value Launch-NvimNew -Description "Launch neovim in new window/tab"
 Set-AliasSafe -Name nv-new -Value Launch-NvimNew -Description "Launch neovim in new window/tab"
-Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander"
+Set-Alias -Name mc -Value Launch-MidnightCommander -Description "Launch GNU Midnight Commander (fallback: FAR Manager)"
 Set-Alias -Name npp -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name np -Value Launch-NotepadPlusPlus -Description "Launch Notepad++"
 Set-Alias -Name ex -Value Launch-Explorer
