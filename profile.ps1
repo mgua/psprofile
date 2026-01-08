@@ -73,6 +73,10 @@
 #	Unblock-File -Path .\profile.ps1
 #	from the <user>\psprofile folder
 #
+# to fix readline errors, execute the following as admin
+# Install-Module -Name PSReadLine -Force -SkipPublisherCheck
+# see https://github.com/JanDeDobbeleer/oh-my-posh/issues/7152
+#
 # see https://stackoverflow.com/questions/24914589/how-to-create-permanent-powershell-aliases
 #
 # check last access time of a folder/file
@@ -955,13 +959,13 @@ Set-Alias -Name gst -Value Get-GitStatus -Option AllScope -Description "shortcut
 #
 # oh-my-posh init pwsh | Invoke-Expression
 # & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\jandedobbeleer.omp.json" --print) -join "`n"))
-# & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\slimfat.omp.json" --print) -join "`n"))
+& ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\slimfat.omp.json" --print) -join "`n"))
 # C:\Users\<user>\AppData\Local\Programs\oh-my-posh\themes\
 # "$env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\slimfat.omp.json"
 # & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\slimfat.omp.json" --print) -join "`n"))
 #
 # we assume that oh-my-posh has been cloned in ~/oh-my-posh/ from https://github.com/JanDeDobbeleer/oh-my-posh.git
-& ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:USERPROFILE\oh-my-posh\themes\slimfat.omp.json" --print) -join "`n"))
+# & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:USERPROFILE\oh-my-posh\themes\slimfat.omp.json" --print) -join "`n"))
 #
 Write-Host 'psprofile: Powershell profile manager. psmenu for help. See: https://github.com/mgua/psprofile'
 
