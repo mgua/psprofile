@@ -50,6 +50,12 @@
 #	improved Launch-MidnightCommander: if mc.exe not found, fallback to far.exe
 #	both mc and far now launch in the current working directory
 #
+# jan 14 2026: starting to add chezmoi integrations
+#		chezdiff: chezdiff <file> 
+#	edits with neovim the local dotfile showing differences with
+#	chezmoi repo version
+#
+#
 # see https://github.com/mgua/psprofile.git
 #
 # save it in the file name specified by the $PROFILE variable
@@ -633,6 +639,19 @@ function psProfileEdit {
 	notepad.exe "$PROFILE"
 }
 
+# chezmoi integrations BEGIN ##################################################
+
+function chezdiff {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Path
+    )
+    $sourcePath = chezmoi source-path $Path
+    nvim -d $Path $sourcePath
+}
+
+# chezmoi integrations END  ###################################################
+
 
 
 function Alias-cdh {
@@ -951,6 +970,9 @@ Set-Alias -Name lla -Value Alias-lla -Description "shows file size in suitable u
 Set-Alias -Name ls -Value Get-LinuxLs -Option AllScope -Description "emulates *nix ls [-l -a -h]"
 
 Set-Alias -Name gst -Value Get-GitStatus -Option AllScope -Description "shortcut for git status [-s]"
+
+Set-Alias -Name cmdiff -Value chezdiff -Description "Edit specific file diffing w/chezmoi version"
+
 
 # the following line invokes oh-my-posh
 # see https://ohmyposh.dev/
