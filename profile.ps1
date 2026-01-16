@@ -54,7 +54,8 @@
 #		chezdiff: chezdiff <file> 
 #	edits with neovim the local dotfile showing differences with
 #	chezmoi repo version
-#
+# 
+# jan 16 2026: considerations about powerhell profile locations
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -72,6 +73,13 @@
 #	
 # to reload the alias file from the current folder, execute
 #	. .\profile.ps1
+#
+# to see which powershell is running (they have different profile locations): 
+# $PSVersionTable.PSVersion
+#	Windows PowerShell (`powershell.exe`) - v5.1 
+#		~\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+#	PowerShell Core (`pwsh.exe`) - v7+
+#		~\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
 #
 # Unauthorized access error may require execution of:
 #	Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
