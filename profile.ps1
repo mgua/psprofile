@@ -56,6 +56,7 @@
 #	chezmoi repo version
 # 
 # jan 16 2026: considerations about powerhell profile locations
+# jan 17 2026: adjusted secd and other code for compatibility with bot versions of powershell
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -375,30 +376,87 @@ function UpgradePsProfile {
 
 
 function Profile-Install {
-	# this file will have to be appended to the existing $PROFILE file
-	#
+	<#
+	.SYNOPSIS
+	Installs the profile.ps1 from the current directory to both PowerShell profile locations.
+	
+	.DESCRIPTION
+	Copies (or optionally symlinks) the profile to:
+	- Windows PowerShell 5.1: $env:USERPROFILE\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+	- PowerShell Core 7+: $env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+	
+	.PARAMETER UseSymlink
+	If specified, creates symbolic links instead of copying. Requires admin privileges on Windows.
+	
+	.EXAMPLE
+	pinstall
+	pinstall -UseSymlink
+	#>
+	param (
+		[switch]$UseSymlink
+	)
+	
 	$currentFolder = Get-Location
 	$newProfile = Join-Path $currentFolder "profile.ps1"
-	if (Test-Path $newProfile) {
-		Write-Host "newProfile found: [$newProfile]"
-		if (Test-Path $PROFILE) {
-			Write-Host "PROFILE: [$PROFILE] exists"
-		} else {
-			New-Item -ItemType File -Path $PROFILE -Force
-			Write-Host "PROFILE: [$PROFILE] created"
-		}
-		# $thisScriptName = $MyInvocation.MyCommand.Name
-		#$thisScriptPath = $PSScriptRoot
-		#$thisScriptFullName = Join-Path $thisScriptPath $thisScriptName
-		Write-Host "copy/append newProfile to PROFILE: executing profile copy..."
-		Write-Host "  copy `"$newProfile`" `"$PROFILE`""
-		copy "$newProfile" "$PROFILE"
-		Write-Host "done."
-	} else {
-		Write-Host "newProfile not found: [$newProfile]"
-		Write-Host "currentFolder: [$currentFolder] expected newProfile: [$newProfile]"
-		Write-Host "Error: you need to execute this command from the folder where you downloaded it"
+	
+	if (-not (Test-Path $newProfile)) {
+		Write-Host "Profile source not found: [$newProfile]" -ForegroundColor Red
+		Write-Host "You need to run this command from the folder containing your profile.ps1" -ForegroundColor Yellow
+		return
 	}
+	
+	Write-Host "Source profile found: [$newProfile]" -ForegroundColor Green
+	
+	# Define both profile paths
+	$profilePaths = @{
+		"Windows PowerShell 5.1" = Join-Path (Join-Path $env:USERPROFILE "Documents\WindowsPowerShell") "Microsoft.PowerShell_profile.ps1"
+		"PowerShell Core 7+"     = Join-Path (Join-Path $env:USERPROFILE "Documents\PowerShell") "Microsoft.PowerShell_profile.ps1"
+	}
+	
+	foreach ($psVersion in $profilePaths.Keys) {
+		$targetProfile = $profilePaths[$psVersion]
+		$targetDir = Split-Path $targetProfile -Parent
+		
+		Write-Host "`nProcessing: $psVersion" -ForegroundColor Cyan
+		Write-Host "  Target: $targetProfile"
+		
+		# Ensure target directory exists
+		if (-not (Test-Path $targetDir)) {
+			Write-Host "  Creating directory: $targetDir" -ForegroundColor Yellow
+			New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+		}
+		
+		# Remove existing file/link if present
+		if (Test-Path $targetProfile) {
+			$existingItem = Get-Item $targetProfile -Force
+			if ($existingItem.LinkType) {
+				Write-Host "  Removing existing symlink" -ForegroundColor Yellow
+			} else {
+				Write-Host "  Removing existing file" -ForegroundColor Yellow
+			}
+			Remove-Item $targetProfile -Force
+		}
+		
+		if ($UseSymlink) {
+			# Create symbolic link (requires admin on Windows)
+			try {
+				New-Item -ItemType SymbolicLink -Path $targetProfile -Target $newProfile -ErrorAction Stop | Out-Null
+				Write-Host "  Symlink created successfully" -ForegroundColor Green
+			} catch {
+				Write-Host "  Failed to create symlink (requires admin privileges)" -ForegroundColor Red
+				Write-Host "  Falling back to copy..." -ForegroundColor Yellow
+				Copy-Item $newProfile $targetProfile
+				Write-Host "  Copied successfully" -ForegroundColor Green
+			}
+		} else {
+			# Copy the file
+			Copy-Item $newProfile $targetProfile
+			Write-Host "  Copied successfully" -ForegroundColor Green
+		}
+	}
+	
+	Write-Host "`nProfile installation complete!" -ForegroundColor Green
+	Write-Host "Restart your PowerShell sessions to load the new profile." -ForegroundColor Cyan
 }
 
 function Get-ExecutablePath {
@@ -694,7 +752,8 @@ function Select-VirtualEnvironment {
 
     # Get the selected folder name
     $selectedEnv = $venvFolders[$selection]
-    $activateScript = Join-Path $env:USERPROFILE $selectedEnv "Scripts\Activate.ps1"
+    # Use nested Join-Path for compatibility with both PS 5.1 and PS Core 7+
+    $activateScript = Join-Path (Join-Path $env:USERPROFILE $selectedEnv) "Scripts\Activate.ps1"
 
     if (Test-Path $activateScript) {
         # Deactivate current environment if one is active
@@ -733,9 +792,10 @@ function Select-VirtualEnvironmentCd {
 
     # Get the selected folder name (venv_<envname>)
     $selectedEnv = $venvFolders[$selection]
-    $activateScript = Join-Path $env:USERPROFILE $selectedEnv "Scripts\Activate.ps1"
+    # Use nested Join-Path for compatibility with both PS 5.1 and PS Core 7+
+    $activateScript = Join-Path (Join-Path $env:USERPROFILE $selectedEnv) "Scripts\Activate.ps1"
     $projFolder = $selectedEnv -replace 'venv_', ''
-    $projFolderPath = Join-Path $env:USERPROFILE "prj" $projFolder
+    $projFolderPath = Join-Path $env:USERPROFILE "$projFolder"
 
     if (Test-Path $activateScript) {
         # Deactivate current environment if one is active
