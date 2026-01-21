@@ -1,0 +1,27 @@
+@{
+    # Root directory for all links (~ expands to $HOME)
+    LinksRoot = "~/mnt"
+
+    # Local drives - use junctions (no admin needed)
+    # Format: "link_name" = "drive_path"
+    LocalDrives = @{
+        "loc_d" = "D:\"
+        # "loc_e" = "E:\"
+        # "loc_f" = "F:\"
+    }
+
+    # Network shares - need admin for symlinks
+    # Format: "link_name" = "\\server\share"
+    # Use backslashes for UNC paths
+    NetworkShares = @{
+        #"net_m" = "\\server.intranetdomain\unc\path"
+        #"net_h" = "\\fileserver\uncpath\homesfolder\myuser"
+        # "net_nas" = "\\nas\storage"
+    }
+
+    # Specific project folders (can be local or network)
+    Projects = @{
+        # "proj_webapp" = "D:\projects\webapp"
+        # "proj_api" = "\\server\development\api"
+    }
+}
