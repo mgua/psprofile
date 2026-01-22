@@ -57,6 +57,8 @@
 # 
 # jan 16 2026: considerations about powerhell profile locations
 # jan 17 2026: adjusted secd and other code for compatibility with bot versions of powershell
+# jan 22 2026: mgua - added oo/omp alias to toggle Oh My Posh on/off
+#              Oh My Posh toggle support - allows deactivating/reactivating OMP prompt
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -114,8 +116,53 @@
 #    pspe:	Powershell profile edit: allow editing this file, and reloads 
 #		its contents after the changes
 #   
+#
+#
+$script:OmpThemePath = "$env:POSH_THEMES_PATH\slimfat.omp.json"
+$script:OmpEnabled = $true
+# as of jan 17 2025 the posh themes supporting 
+#	the python environment
+#	the git branch
+#	the local path
+#
+#	are:
+#		tonybaloney
+#		space
+#		smothie
+#		rudolfs-dark
+#		rudolfs-light
+#		powerlevel10k_modern
+#		poshmon
+#		slim
+#		slimfat		(slimfat.omp.json)
 
 
+
+function Toggle-OhMyPosh {
+    <#
+    .SYNOPSIS
+        Toggle Oh My Posh prompt on/off
+    .DESCRIPTION
+        Deactivates Oh My Posh and restores default PowerShell prompt, 
+        or reactivates OMP with the configured theme (slimfat).
+    .EXAMPLE
+        oo          # Toggle OMP on/off
+        omp         # Toggle OMP on/off
+    #>
+    if ($script:OmpEnabled) {
+        # Deactivate OMP - restore default prompt
+        function global:prompt {
+            "PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) "
+        }
+        $script:OmpEnabled = $false
+        Write-Host "Oh My Posh: OFF (default prompt)" -ForegroundColor Yellow
+    } else {
+        # Reactivate OMP
+        & ([ScriptBlock]::Create((oh-my-posh init pwsh --config $script:OmpThemePath --print) -join "`n"))
+        $script:OmpEnabled = $true
+        Write-Host "Oh My Posh: ON ($($script:OmpThemePath | Split-Path -Leaf))" -ForegroundColor Green
+    }
+}
 
 
 ########################### by hapylestat menu routines BEGIN ######################
@@ -1041,6 +1088,10 @@ Set-Alias -Name gst -Value Get-GitStatus -Option AllScope -Description "shortcut
 
 Set-Alias -Name cmdiff -Value chezdiff -Description "Edit specific file diffing w/chezmoi version"
 
+Set-Alias -Name oo -Value Toggle-OhMyPosh -Description "Toggle Oh My Posh prompt on/off"
+Set-Alias -Name omp -Value Toggle-OhMyPosh -Description "Toggle Oh My Posh prompt on/off"
+
+
 
 # the following line invokes oh-my-posh
 # see https://ohmyposh.dev/
@@ -1049,7 +1100,7 @@ Set-Alias -Name cmdiff -Value chezdiff -Description "Edit specific file diffing 
 #
 # oh-my-posh init pwsh | Invoke-Expression
 # & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\jandedobbeleer.omp.json" --print) -join "`n"))
-& ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\slimfat.omp.json" --print) -join "`n"))
+#
 # C:\Users\<user>\AppData\Local\Programs\oh-my-posh\themes\
 # "$env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\slimfat.omp.json"
 # & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\slimfat.omp.json" --print) -join "`n"))
@@ -1057,21 +1108,11 @@ Set-Alias -Name cmdiff -Value chezdiff -Description "Edit specific file diffing 
 # we assume that oh-my-posh has been cloned in ~/oh-my-posh/ from https://github.com/JanDeDobbeleer/oh-my-posh.git
 # & ([ScriptBlock]::Create((oh-my-posh init pwsh --config "$env:USERPROFILE\oh-my-posh\themes\slimfat.omp.json" --print) -join "`n"))
 #
+
+
+# Initialize Oh My Posh with the selected theme
+& ([ScriptBlock]::Create((oh-my-posh init pwsh --config $script:OmpThemePath --print) -join "`n"))
+
 Write-Host 'psprofile: Powershell profile manager. psmenu for help. See: https://github.com/mgua/psprofile'
 
-# as of jan 17 2025 the posh themes supporting 
-#	the python environment
-#	the git branch
-#	the local path
-#
-#	are:
-#		tonybaloney
-#		space
-#		smothie
-#		rudolfs-dark
-#		rudolfs-light
-#		powerlevel10k_modern
-#		poshmon
-#		slim
-#		slimfat		(slimfat.omp.json)
 #
