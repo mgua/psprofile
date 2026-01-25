@@ -580,6 +580,7 @@ function Select-Identity {
     .DESCRIPTION
         Lists identity profiles where both ~/.gitconfig_<id> and ~/.ssh/config_<id> exist.
         Backs up current configs to .bak and copies selected identity configs in place.
+        Also switches SSH keys: id_rsa_<id> -> id_rsa (and .pub files).
     .EXAMPLE
         sid              # Interactive menu to select identity
         Select-Identity  # Same as above
@@ -600,6 +601,7 @@ function Select-Identity {
         Write-Host "Expected file pairs:" -ForegroundColor Cyan
         Write-Host "  ~/.gitconfig_<identity>     (e.g., .gitconfig_work, .gitconfig_personal)"
         Write-Host "  ~/.ssh/config_<identity>    (e.g., config_work, config_personal)"
+        Write-Host "  ~/.ssh/id_rsa_<identity>    (optional: e.g., id_rsa_work, id_rsa_personal)"
         Write-Host ""
         Write-Host "Create matching pairs to enable identity switching." -ForegroundColor Gray
         return
@@ -664,6 +666,7 @@ function Select-Identity {
     Write-Host "Current Identity Configuration:" -ForegroundColor Cyan
     $currentGitconfig = Join-Path $homeDir ".gitconfig"
     $currentSshConfig = Join-Path $sshDir "config"
+    $currentIdRsa = Join-Path $sshDir "id_rsa"
     
     if (Test-Path $currentGitconfig) {
         $gitUser = git config --global user.name 2>$null
@@ -678,13 +681,31 @@ function Select-Identity {
     }
     
     if (Test-Path $currentSshConfig) {
-        Write-Host "  SSH: config exists" -ForegroundColor White
+        Write-Host "  SSH config: exists" -ForegroundColor White
     } else {
-        Write-Host "  SSH: (no config)" -ForegroundColor Gray
+        Write-Host "  SSH config: (no config)" -ForegroundColor Gray
+    }
+    
+    if (Test-Path $currentIdRsa) {
+        Write-Host "  SSH key: id_rsa exists" -ForegroundColor White
+    } else {
+        Write-Host "  SSH key: (no id_rsa)" -ForegroundColor Gray
     }
     
     Write-Host ""
     Write-Host "Available Identities:" -ForegroundColor Cyan
+    
+    # Show which identities have SSH keys available
+    foreach ($id in $validIdentities) {
+        $keyPath = Join-Path $sshDir "id_rsa_$id"
+        $hasKey = Test-Path $keyPath
+        if ($hasKey) {
+            Write-Host "  $id (has SSH key)" -ForegroundColor Green
+        } else {
+            Write-Host "  $id (no SSH key)" -ForegroundColor Gray
+        }
+    }
+    Write-Host ""
     
     # Use the Menu function for selection
     $selection = Menu $validIdentities "Select Identity"
@@ -693,14 +714,23 @@ function Select-Identity {
     Write-Host ""
     Write-Host "Switching to identity: $selectedId" -ForegroundColor Green
     
-    # Define file paths
+    # Define file paths for .gitconfig
     $gitconfigSource = Join-Path $homeDir ".gitconfig_$selectedId"
     $gitconfigTarget = Join-Path $homeDir ".gitconfig"
     $gitconfigBackup = Join-Path $homeDir ".gitconfig.bak"
     
+    # Define file paths for SSH config
     $sshConfigSource = Join-Path $sshDir "config_$selectedId"
     $sshConfigTarget = Join-Path $sshDir "config"
     $sshConfigBackup = Join-Path $sshDir "config.bak"
+    
+    # Define file paths for SSH keys
+    $idRsaSource = Join-Path $sshDir "id_rsa_$selectedId"
+    $idRsaTarget = Join-Path $sshDir "id_rsa"
+    $idRsaBackup = Join-Path $sshDir "id_rsa.bak"
+    $idRsaPubSource = Join-Path $sshDir "id_rsa_$selectedId.pub"
+    $idRsaPubTarget = Join-Path $sshDir "id_rsa.pub"
+    $idRsaPubBackup = Join-Path $sshDir "id_rsa.pub.bak"
     
     # Backup and copy .gitconfig
     if (Test-Path $gitconfigTarget) {
@@ -717,6 +747,32 @@ function Select-Identity {
     }
     Copy-Item -Path $sshConfigSource -Destination $sshConfigTarget -Force
     Write-Host "  Copied .ssh/config_$selectedId -> .ssh/config" -ForegroundColor White
+    
+    # Backup and copy SSH private key (if exists)
+    if (Test-Path $idRsaSource) {
+        if (Test-Path $idRsaTarget) {
+            Copy-Item -Path $idRsaTarget -Destination $idRsaBackup -Force
+            Write-Host "  Backed up .ssh/id_rsa -> .ssh/id_rsa.bak" -ForegroundColor Gray
+        }
+        Copy-Item -Path $idRsaSource -Destination $idRsaTarget -Force
+        Write-Host "  Copied .ssh/id_rsa_$selectedId -> .ssh/id_rsa" -ForegroundColor White
+    } else {
+        Write-Host "  Note: No id_rsa_$selectedId found, SSH key unchanged" -ForegroundColor Yellow
+    }
+    
+    # Backup and copy SSH public key (if exists)
+    if (Test-Path $idRsaPubSource) {
+        if (Test-Path $idRsaPubTarget) {
+            Copy-Item -Path $idRsaPubTarget -Destination $idRsaPubBackup -Force
+            Write-Host "  Backed up .ssh/id_rsa.pub -> .ssh/id_rsa.pub.bak" -ForegroundColor Gray
+        }
+        Copy-Item -Path $idRsaPubSource -Destination $idRsaPubTarget -Force
+        Write-Host "  Copied .ssh/id_rsa_$selectedId.pub -> .ssh/id_rsa.pub" -ForegroundColor White
+    } else {
+        if (Test-Path $idRsaSource) {
+            Write-Host "  Note: No id_rsa_$selectedId.pub found, public key unchanged" -ForegroundColor Yellow
+        }
+    }
     
     # Show new identity
     Write-Host ""
