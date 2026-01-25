@@ -1,6 +1,6 @@
 # this is my powershell alias file
 # mgua@tomware.it
-# october-november 2023
+# jan 2026 release
 #
 # may 31 2024:
 #	added la/ga aliases to show alias list
@@ -570,6 +570,162 @@ function Get-ExecutablePath {
     )
     $path = Get-Command $ExecutableName | Select-Object -ExpandProperty Path
     return $path
+}
+
+
+function Select-Identity {
+    <#
+    .SYNOPSIS
+        Switch SSH and Git identity by selecting from available identity profiles.
+    .DESCRIPTION
+        Lists identity profiles where both ~/.gitconfig_<id> and ~/.ssh/config_<id> exist.
+        Backs up current configs to .bak and copies selected identity configs in place.
+    .EXAMPLE
+        sid              # Interactive menu to select identity
+        Select-Identity  # Same as above
+    #>
+    
+    $homeDir = $env:USERPROFILE
+    $sshDir = Join-Path $homeDir ".ssh"
+    
+    # Find all .gitconfig_* files
+    $gitconfigFiles = Get-ChildItem -Path $homeDir -Filter ".gitconfig_*" -File -Force -ErrorAction SilentlyContinue
+    
+    # Find all .ssh/config_* files  
+    $sshConfigFiles = Get-ChildItem -Path $sshDir -Filter "config_*" -File -Force -ErrorAction SilentlyContinue
+    
+    if (-not $gitconfigFiles -or -not $sshConfigFiles) {
+        Write-Host "No identity profiles found." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Expected file pairs:" -ForegroundColor Cyan
+        Write-Host "  ~/.gitconfig_<identity>     (e.g., .gitconfig_work, .gitconfig_personal)"
+        Write-Host "  ~/.ssh/config_<identity>    (e.g., config_work, config_personal)"
+        Write-Host ""
+        Write-Host "Create matching pairs to enable identity switching." -ForegroundColor Gray
+        return
+    }
+    
+    # Extract identity names from gitconfig files
+    $gitIdentities = @{}
+    foreach ($file in $gitconfigFiles) {
+        $id = $file.Name -replace '^\.gitconfig_', ''
+        $gitIdentities[$id] = $file.FullName
+    }
+    
+    # Extract identity names from ssh config files
+    $sshIdentities = @{}
+    foreach ($file in $sshConfigFiles) {
+        $id = $file.Name -replace '^config_', ''
+        $sshIdentities[$id] = $file.FullName
+    }
+    
+    # Find identities that exist in BOTH locations
+    $validIdentities = @()
+    $gitOnly = @()
+    $sshOnly = @()
+    
+    foreach ($id in $gitIdentities.Keys) {
+        if ($sshIdentities.ContainsKey($id)) {
+            $validIdentities += $id
+        } else {
+            $gitOnly += $id
+        }
+    }
+    
+    foreach ($id in $sshIdentities.Keys) {
+        if (-not $gitIdentities.ContainsKey($id)) {
+            $sshOnly += $id
+        }
+    }
+    
+    # Report mismatches
+    if ($gitOnly.Count -gt 0 -or $sshOnly.Count -gt 0) {
+        Write-Host ""
+        Write-Host "Warning: Some identity files are incomplete (missing pair):" -ForegroundColor Yellow
+        foreach ($id in $gitOnly) {
+            Write-Host "  .gitconfig_$id exists, but .ssh/config_$id is missing" -ForegroundColor Gray
+        }
+        foreach ($id in $sshOnly) {
+            Write-Host "  .ssh/config_$id exists, but .gitconfig_$id is missing" -ForegroundColor Gray
+        }
+        Write-Host ""
+    }
+    
+    if ($validIdentities.Count -eq 0) {
+        Write-Host "No complete identity profiles found (need both .gitconfig_<id> and .ssh/config_<id>)." -ForegroundColor Red
+        return
+    }
+    
+    # Sort identities alphabetically
+    $validIdentities = $validIdentities | Sort-Object
+    
+    # Show current identity info
+    Write-Host ""
+    Write-Host "Current Identity Configuration:" -ForegroundColor Cyan
+    $currentGitconfig = Join-Path $homeDir ".gitconfig"
+    $currentSshConfig = Join-Path $sshDir "config"
+    
+    if (Test-Path $currentGitconfig) {
+        $gitUser = git config --global user.name 2>$null
+        $gitEmail = git config --global user.email 2>$null
+        if ($gitUser -or $gitEmail) {
+            Write-Host "  Git: $gitUser <$gitEmail>" -ForegroundColor White
+        } else {
+            Write-Host "  Git: (configured, no user info)" -ForegroundColor Gray
+        }
+    } else {
+        Write-Host "  Git: (no .gitconfig)" -ForegroundColor Gray
+    }
+    
+    if (Test-Path $currentSshConfig) {
+        Write-Host "  SSH: config exists" -ForegroundColor White
+    } else {
+        Write-Host "  SSH: (no config)" -ForegroundColor Gray
+    }
+    
+    Write-Host ""
+    Write-Host "Available Identities:" -ForegroundColor Cyan
+    
+    # Use the Menu function for selection
+    $selection = Menu $validIdentities "Select Identity"
+    $selectedId = $validIdentities[$selection]
+    
+    Write-Host ""
+    Write-Host "Switching to identity: $selectedId" -ForegroundColor Green
+    
+    # Define file paths
+    $gitconfigSource = Join-Path $homeDir ".gitconfig_$selectedId"
+    $gitconfigTarget = Join-Path $homeDir ".gitconfig"
+    $gitconfigBackup = Join-Path $homeDir ".gitconfig.bak"
+    
+    $sshConfigSource = Join-Path $sshDir "config_$selectedId"
+    $sshConfigTarget = Join-Path $sshDir "config"
+    $sshConfigBackup = Join-Path $sshDir "config.bak"
+    
+    # Backup and copy .gitconfig
+    if (Test-Path $gitconfigTarget) {
+        Copy-Item -Path $gitconfigTarget -Destination $gitconfigBackup -Force
+        Write-Host "  Backed up .gitconfig -> .gitconfig.bak" -ForegroundColor Gray
+    }
+    Copy-Item -Path $gitconfigSource -Destination $gitconfigTarget -Force
+    Write-Host "  Copied .gitconfig_$selectedId -> .gitconfig" -ForegroundColor White
+    
+    # Backup and copy SSH config
+    if (Test-Path $sshConfigTarget) {
+        Copy-Item -Path $sshConfigTarget -Destination $sshConfigBackup -Force
+        Write-Host "  Backed up .ssh/config -> .ssh/config.bak" -ForegroundColor Gray
+    }
+    Copy-Item -Path $sshConfigSource -Destination $sshConfigTarget -Force
+    Write-Host "  Copied .ssh/config_$selectedId -> .ssh/config" -ForegroundColor White
+    
+    # Show new identity
+    Write-Host ""
+    Write-Host "Identity switched successfully!" -ForegroundColor Green
+    $newGitUser = git config --global user.name 2>$null
+    $newGitEmail = git config --global user.email 2>$null
+    if ($newGitUser -or $newGitEmail) {
+        Write-Host "  Git identity: $newGitUser <$newGitEmail>" -ForegroundColor Cyan
+    }
 }
 
 
@@ -1178,6 +1334,7 @@ Set-Alias -Name cmdiff -Value chezdiff -Description "Edit specific file diffing 
 Set-Alias -Name oo -Value Toggle-OhMyPosh -Description "Toggle Oh My Posh prompt on/off"
 Set-Alias -Name omp -Value Toggle-OhMyPosh -Description "Toggle Oh My Posh prompt on/off"
 
+Set-Alias -Name sid -Value Select-Identity -Description "Switch SSH and Git identity profiles"
 
 
 # the following line invokes oh-my-posh
