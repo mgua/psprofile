@@ -594,16 +594,35 @@ function Launch-NvimLocal {
 		[string[]]$Arguments
 	)
 	
-	# Get the actual nvim EXECUTABLE, not any alias
-	$nvimCmd = Get-Command nvim -CommandType Application -ErrorAction SilentlyContinue
+	# Get the actual nvim EXECUTABLE, explicitly looking for .exe files only
+	# This avoids finding our own alias which would cause recursion
+	$nvimCmd = Get-Command nvim.exe -CommandType Application -ErrorAction SilentlyContinue
 	
 	if (-not $nvimCmd) {
-		Write-Host "Error: nvim executable not found in PATH" -ForegroundColor Red
-		return
+		# Fallback: search common installation paths
+		$commonPaths = @(
+			"$env:ProgramFiles\Neovim\bin\nvim.exe",
+			"${env:ProgramFiles(x86)}\Neovim\bin\nvim.exe",
+			"$env:LOCALAPPDATA\Programs\Neovim\bin\nvim.exe",
+			"$env:USERPROFILE\scoop\shims\nvim.exe"
+		)
+		
+		foreach ($path in $commonPaths) {
+			if (Test-Path $path) {
+				$nvimPath = $path
+				break
+			}
+		}
+		
+		if (-not $nvimPath) {
+			Write-Host "Error: nvim.exe not found in PATH or common locations" -ForegroundColor Red
+			return
+		}
+	} else {
+		$nvimPath = $nvimCmd.Source
 	}
 	
-	# Store the path and execute
-	$nvimPath = $nvimCmd.Path
+	# Execute nvim with arguments
 	& $nvimPath @Arguments
 }
 
@@ -623,20 +642,35 @@ function Launch-NvimNew {
 		Write-Host "Warning: SSH session detected. Cannot open new window." -ForegroundColor Yellow
 		Write-Host "         Falling back to local invocation (use 'nv' or 'nvim' for SSH)." -ForegroundColor Yellow
 		Write-Host ""
-		# Fall back to local invocation
 		Launch-NvimLocal @Arguments
 		return
 	}
 	
-	# Get the actual nvim EXECUTABLE, not any alias
-	$nvimCmd = Get-Command nvim -CommandType Application -ErrorAction SilentlyContinue
+	# Get the actual nvim EXECUTABLE, explicitly looking for .exe files only
+	$nvimCmd = Get-Command nvim.exe -CommandType Application -ErrorAction SilentlyContinue
 	
 	if (-not $nvimCmd) {
-		Write-Host "Error: nvim executable not found in PATH" -ForegroundColor Red
-		return
+		$commonPaths = @(
+			"$env:ProgramFiles\Neovim\bin\nvim.exe",
+			"${env:ProgramFiles(x86)}\Neovim\bin\nvim.exe",
+			"$env:LOCALAPPDATA\Programs\Neovim\bin\nvim.exe",
+			"$env:USERPROFILE\scoop\shims\nvim.exe"
+		)
+		
+		foreach ($path in $commonPaths) {
+			if (Test-Path $path) {
+				$nvimPath = $path
+				break
+			}
+		}
+		
+		if (-not $nvimPath) {
+			Write-Host "Error: nvim.exe not found in PATH or common locations" -ForegroundColor Red
+			return
+		}
+	} else {
+		$nvimPath = $nvimCmd.Source
 	}
-	
-	$nvimPath = $nvimCmd.Path
 	
 	# Properly escape and quote arguments for passing to new shell
 	$escapedArgs = @()
@@ -655,7 +689,6 @@ function Launch-NvimNew {
 		Write-Host "Launching nvim in new Windows Terminal tab..." -ForegroundColor Green
 		Start-Process wt.exe -ArgumentList "-w 0 nt pwsh.exe -NoExit -Command `"& '$nvimPath' $argString`""
 	} 
-	# Fall back to new PowerShell window
 	else {
 		Write-Host "Launching nvim in new PowerShell window..." -ForegroundColor Green
 		$command = "& '$nvimPath' $argString"
