@@ -399,8 +399,7 @@ function psMenu-Editor-Options {
 	    }
         '3' { 
 	      Write-Host "cd ~/AppData/local/nvim"
-	      git pull "https://marco.guardigli/kickstart.git"
-	      nvim
+	      Write-Host "you can execute git clone https://github.com/mgua/mg-nvim-2025"
 	      }
         'q' { return }  # Quit
     }
@@ -429,8 +428,10 @@ function Profile-Install {
 	
 	.DESCRIPTION
 	Copies (or optionally symlinks) the profile to:
-	- Windows PowerShell 5.1: $env:USERPROFILE\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
-	- PowerShell Core 7+: $env:USERPROFILE\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+	- Windows PowerShell 5.1: <Documents>\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+	- PowerShell Core 7+: <Documents>\PowerShell\Microsoft.PowerShell_profile.ps1
+	
+	Automatically detects OneDrive Documents redirection and installs to the correct location.
 	
 	.PARAMETER UseSymlink
 	If specified, creates symbolic links instead of copying. Requires admin privileges on Windows.
@@ -454,17 +455,41 @@ function Profile-Install {
 	
 	Write-Host "Source profile found: [$newProfile]" -ForegroundColor Green
 	
-	# Define both profile paths
+	# Detect actual Documents folder (follows OneDrive redirection)
+	$actualDocuments = [Environment]::GetFolderPath('MyDocuments')
+	$defaultDocuments = Join-Path $env:USERPROFILE "Documents"
+	
+	# Check for OneDrive redirection
+	$isOneDriveRedirected = $actualDocuments -ne $defaultDocuments
+	
+	if ($isOneDriveRedirected) {
+		Write-Host ""
+		Write-Host "=" * 70 -ForegroundColor Cyan
+		Write-Host "  OneDrive Documents Redirection Detected" -ForegroundColor Cyan
+		Write-Host "=" * 70 -ForegroundColor Cyan
+		Write-Host ""
+		Write-Host "  Your Documents folder is redirected to OneDrive:" -ForegroundColor Yellow
+		Write-Host "    Default path:  $defaultDocuments" -ForegroundColor Gray
+		Write-Host "    Actual path:   $actualDocuments" -ForegroundColor Green
+		Write-Host ""
+		Write-Host "  PowerShell expects profiles in the OneDrive location." -ForegroundColor Yellow
+		Write-Host "  Installing to: $actualDocuments" -ForegroundColor Green
+		Write-Host ""
+		Write-Host "=" * 70 -ForegroundColor Cyan
+		Write-Host ""
+	}
+	
+	# Define both profile paths using the ACTUAL Documents location
 	$profilePaths = @{
-		"Windows PowerShell 5.1" = Join-Path (Join-Path $env:USERPROFILE "Documents\WindowsPowerShell") "Microsoft.PowerShell_profile.ps1"
-		"PowerShell Core 7+"     = Join-Path (Join-Path $env:USERPROFILE "Documents\PowerShell") "Microsoft.PowerShell_profile.ps1"
+		"Windows PowerShell 5.1" = Join-Path $actualDocuments "WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
+		"PowerShell Core 7+"     = Join-Path $actualDocuments "PowerShell\Microsoft.PowerShell_profile.ps1"
 	}
 	
 	foreach ($psVersion in $profilePaths.Keys) {
 		$targetProfile = $profilePaths[$psVersion]
 		$targetDir = Split-Path $targetProfile -Parent
 		
-		Write-Host "`nProcessing: $psVersion" -ForegroundColor Cyan
+		Write-Host "Processing: $psVersion" -ForegroundColor Cyan
 		Write-Host "  Target: $targetProfile"
 		
 		# Ensure target directory exists
@@ -500,11 +525,40 @@ function Profile-Install {
 			Copy-Item $newProfile $targetProfile
 			Write-Host "  Copied successfully" -ForegroundColor Green
 		}
+		Write-Host ""
 	}
 	
-	Write-Host "`nProfile installation complete!" -ForegroundColor Green
+	# Clean up old profiles in wrong location if OneDrive redirected
+	if ($isOneDriveRedirected) {
+		$oldPaths = @(
+			(Join-Path $defaultDocuments "WindowsPowerShell\Microsoft.PowerShell_profile.ps1"),
+			(Join-Path $defaultDocuments "PowerShell\Microsoft.PowerShell_profile.ps1")
+		)
+		
+		$foundOldProfiles = $false
+		foreach ($oldPath in $oldPaths) {
+			if (Test-Path $oldPath) {
+				if (-not $foundOldProfiles) {
+					Write-Host "Note: Old profile(s) found in non-OneDrive location:" -ForegroundColor Yellow
+					$foundOldProfiles = $true
+				}
+				Write-Host "  $oldPath" -ForegroundColor Gray
+			}
+		}
+		
+		if ($foundOldProfiles) {
+			Write-Host "  These are NOT being used by PowerShell." -ForegroundColor Yellow
+			Write-Host "  You may want to delete them manually." -ForegroundColor Yellow
+			Write-Host ""
+		}
+	}
+	
+	Write-Host "Profile installation complete!" -ForegroundColor Green
 	Write-Host "Restart your PowerShell sessions to load the new profile." -ForegroundColor Cyan
 }
+
+
+
 
 function Get-ExecutablePath {
 	# given an executable name, finds the full path
