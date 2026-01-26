@@ -158,6 +158,24 @@ function Test-TargetMatch {
     return $c -eq $e
 }
 
+function Confirm-LinkRedefinition {
+    param(
+        [string]$LinkPath,
+        [string]$CurrentTarget,
+        [string]$NewTarget
+    )
+    
+    Write-Host ""
+    Write-Host "  Link redefinition required:" -ForegroundColor Yellow
+    Write-Host "    Link:    $LinkPath" -ForegroundColor White
+    Write-Host "    Current: $CurrentTarget" -ForegroundColor Red
+    Write-Host "    New:     $NewTarget" -ForegroundColor Green
+    Write-Host ""
+    
+    $response = Read-Host "  Replace this link? [y/N]"
+    return ($response -eq 'y' -or $response -eq 'Y')
+}
+
 function New-SafeJunction {
     param(
         [string]$Link,
@@ -182,8 +200,14 @@ function New-SafeJunction {
             else {
                 Write-Warning "Link exists but points elsewhere: $Link -> $currentTarget"
                 if ($Force) {
-                    Write-Host "  Removing old link..." -ForegroundColor Yellow
-                    Remove-Item $Link -Force
+                    if (Confirm-LinkRedefinition -LinkPath $Link -CurrentTarget $currentTarget -NewTarget $Target) {
+                        Write-Host "  Removing old link..." -ForegroundColor Yellow
+                        Remove-Item $Link -Force
+                    }
+                    else {
+                        Write-Host "  [SKIPPED] Link redefinition cancelled" -ForegroundColor Gray
+                        return $false
+                    }
                 }
                 else {
                     Write-Warning "Use -Force to replace"
@@ -245,8 +269,14 @@ function New-SafeSymlink {
             else {
                 Write-Warning "Link exists but points elsewhere: $Link -> $currentTarget"
                 if ($Force) {
-                    Write-Host "  Removing old link..." -ForegroundColor Yellow
-                    Remove-Item $Link -Force
+                    if (Confirm-LinkRedefinition -LinkPath $Link -CurrentTarget $currentTarget -NewTarget $Target) {
+                        Write-Host "  Removing old link..." -ForegroundColor Yellow
+                        Remove-Item $Link -Force
+                    }
+                    else {
+                        Write-Host "  [SKIPPED] Link redefinition cancelled" -ForegroundColor Gray
+                        return $false
+                    }
                 }
                 else {
                     Write-Warning "Use -Force to replace"
