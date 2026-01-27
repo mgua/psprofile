@@ -60,6 +60,11 @@
 # jan 22 2026: mgua - added oo/omp alias to toggle Oh My Posh on/off
 #              Oh My Posh toggle support - allows deactivating/reactivating OMP prompt
 #
+# jan 27 2026: mgua - Fixed CONFIG NOT FOUND issue with Oh My Posh
+#              Added Resolve-OmpThemePath function that searches multiple fallback locations:
+#              $env:POSH_THEMES_PATH, AppData\Local\Programs, ~/oh-my-posh, Chocolatey, etc.
+#              Now gracefully handles missing $env:POSH_THEMES_PATH environment variable
+#
 # see https://github.com/mgua/psprofile.git
 #
 # save it in the file name specified by the $PROFILE variable
@@ -118,8 +123,54 @@
 #   
 #
 #
-$script:OmpThemePath = "$env:POSH_THEMES_PATH\slimfat.omp.json"
+# Oh My Posh theme configuration with robust path resolution
+$script:OmpThemeName = "slimfat.omp.json"
+$script:OmpThemePath = $null
 $script:OmpEnabled = $true
+
+# Function to resolve the Oh My Posh theme path with fallbacks
+function Resolve-OmpThemePath {
+    param([string]$ThemeName)
+    
+    # List of potential theme locations (in priority order)
+    $themePaths = @(
+        # 1. Environment variable path (if set and not empty)
+        $(if ($env:POSH_THEMES_PATH) { "$env:POSH_THEMES_PATH\$ThemeName" } else { $null }),
+        # 2. Standard winget/scoop install location
+        "$env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\$ThemeName",
+        # 3. Cloned oh-my-posh repo in user home
+        "$env:USERPROFILE\oh-my-posh\themes\$ThemeName",
+        # 4. Alternative clone location
+        "$env:USERPROFILE\oh-my-posh-repo\themes\$ThemeName",
+        # 5. Chocolatey install location
+        "$env:ChocolateyInstall\lib\oh-my-posh\tools\themes\$ThemeName",
+        # 6. System-wide install
+        "$env:ProgramFiles\oh-my-posh\themes\$ThemeName"
+    )
+    
+    foreach ($path in $themePaths) {
+        if ($path -and (Test-Path $path -PathType Leaf)) {
+            return $path
+        }
+    }
+    
+    return $null
+}
+
+# Resolve the theme path
+$script:OmpThemePath = Resolve-OmpThemePath -ThemeName $script:OmpThemeName
+
+# If theme not found, warn the user
+if (-not $script:OmpThemePath) {
+    Write-Host "WARNING: Oh My Posh theme '$script:OmpThemeName' not found in any standard location." -ForegroundColor Yellow
+    Write-Host "  Searched locations:" -ForegroundColor Yellow
+    Write-Host "    - `$env:POSH_THEMES_PATH: $env:POSH_THEMES_PATH" -ForegroundColor DarkGray
+    Write-Host "    - $env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\" -ForegroundColor DarkGray
+    Write-Host "    - $env:USERPROFILE\oh-my-posh\themes\" -ForegroundColor DarkGray
+    Write-Host "  To fix: Install oh-my-posh or clone the repo to ~/oh-my-posh/" -ForegroundColor Yellow
+    $script:OmpEnabled = $false
+}
+
 # as of jan 17 2025 the posh themes supporting 
 #	the python environment
 #	the git branch
@@ -157,10 +208,21 @@ function Toggle-OhMyPosh {
         $script:OmpEnabled = $false
         Write-Host "Oh My Posh: OFF (default prompt)" -ForegroundColor Yellow
     } else {
-        # Reactivate OMP
-        & ([ScriptBlock]::Create((oh-my-posh init pwsh --config $script:OmpThemePath --print) -join "`n"))
-        $script:OmpEnabled = $true
-        Write-Host "Oh My Posh: ON ($($script:OmpThemePath | Split-Path -Leaf))" -ForegroundColor Green
+        # Try to resolve theme path if not already set
+        if (-not $script:OmpThemePath) {
+            $script:OmpThemePath = Resolve-OmpThemePath -ThemeName $script:OmpThemeName
+        }
+        
+        if ($script:OmpThemePath -and (Test-Path $script:OmpThemePath)) {
+            # Reactivate OMP
+            & ([ScriptBlock]::Create((oh-my-posh init pwsh --config $script:OmpThemePath --print) -join "`n"))
+            $script:OmpEnabled = $true
+            Write-Host "Oh My Posh: ON ($($script:OmpThemePath | Split-Path -Leaf))" -ForegroundColor Green
+        } else {
+            Write-Host "Oh My Posh: Cannot enable - theme file not found" -ForegroundColor Red
+            Write-Host "  Expected: $script:OmpThemeName" -ForegroundColor DarkGray
+            Write-Host "  Run 'Resolve-OmpThemePath -ThemeName $script:OmpThemeName' to debug" -ForegroundColor DarkGray
+        }
     }
 }
 
@@ -1410,8 +1472,13 @@ Set-Alias -Name sid -Value Select-Identity -Description "Switch SSH and Git iden
 #
 
 
-# Initialize Oh My Posh with the selected theme
-& ([ScriptBlock]::Create((oh-my-posh init pwsh --config $script:OmpThemePath --print) -join "`n"))
+# Initialize Oh My Posh with the selected theme (only if theme was found)
+if ($script:OmpEnabled -and $script:OmpThemePath) {
+    & ([ScriptBlock]::Create((oh-my-posh init pwsh --config $script:OmpThemePath --print) -join "`n"))
+} else {
+    # OMP disabled or theme not found - use default prompt
+    $script:OmpEnabled = $false
+}
 
 Write-Host 'psprofile: Powershell profile manager. psmenu for help. See: https://github.com/mgua/psprofile'
 
