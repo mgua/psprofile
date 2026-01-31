@@ -65,6 +65,9 @@
 #              $env:POSH_THEMES_PATH, AppData\Local\Programs, ~/oh-my-posh, Chocolatey, etc.
 #              Now gracefully handles missing $env:POSH_THEMES_PATH environment variable
 #
+# jan 31 2026: kimi branch: mgua+kimi - some refactoring: code relocated in sections.
+#			   oo alias adjusted to restore venv prompt
+#
 # see https://github.com/mgua/psprofile.git
 #
 # save it in the file name specified by the $PROFILE variable
@@ -121,7 +124,6 @@
 #    pspe:	Powershell profile edit: allow editing this file, and reloads 
 #		its contents after the changes
 #   
-#
 #
 # Oh My Posh theme configuration with robust path resolution
 $script:OmpThemeName = "slimfat.omp.json"
@@ -1483,3 +1485,4 @@ if ($script:OmpEnabled -and $script:OmpThemePath) {
 Write-Host 'psprofile: Powershell profile manager. psmenu for help. See: https://github.com/mgua/psprofile'
 
 #
+
