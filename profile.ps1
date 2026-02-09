@@ -65,8 +65,11 @@
 #              $env:POSH_THEMES_PATH, AppData\Local\Programs, ~/oh-my-posh, Chocolatey, etc.
 #              Now gracefully handles missing $env:POSH_THEMES_PATH environment variable
 #
-# jan 31 2026: kimi branch: mgua+kimi - some refactoring: code relocated in sections.
-#			   oo alias adjusted to restore venv prompt
+# jan 31 2026: kimi branch
+#              mgua+kimi - some refactoring: code relocated in sections.
+#              oo alias adjusted to restore venv prompt
+#
+# feb 10 2026: adjustment to theme from slimfat to slimfat2 with better venv management
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -126,7 +129,7 @@
 #   
 #
 # Oh My Posh theme configuration with robust path resolution
-$script:OmpThemeName = "slimfat.omp.json"
+$script:OmpThemeName = "slimfat2.omp.json"
 $script:OmpThemePath = $null
 $script:OmpEnabled = $true
 
@@ -136,17 +139,19 @@ function Resolve-OmpThemePath {
     
     # List of potential theme locations (in priority order)
     $themePaths = @(
-        # 1. Environment variable path (if set and not empty)
+        # 1. User psprofile folder (custom themes override)
+        "$env:USERPROFILE\psprofile\$ThemeName",
+        # 2. Environment variable path (if set and not empty)
         $(if ($env:POSH_THEMES_PATH) { "$env:POSH_THEMES_PATH\$ThemeName" } else { $null }),
-        # 2. Standard winget/scoop install location
+        # 3. Standard winget/scoop install location
         "$env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\$ThemeName",
-        # 3. Cloned oh-my-posh repo in user home
+        # 4. Cloned oh-my-posh repo in user home
         "$env:USERPROFILE\oh-my-posh\themes\$ThemeName",
-        # 4. Alternative clone location
+        # 5. Alternative clone location
         "$env:USERPROFILE\oh-my-posh-repo\themes\$ThemeName",
-        # 5. Chocolatey install location
+        # 6. Chocolatey install location
         "$env:ChocolateyInstall\lib\oh-my-posh\tools\themes\$ThemeName",
-        # 6. System-wide install
+        # 7. System-wide install
         "$env:ProgramFiles\oh-my-posh\themes\$ThemeName"
     )
     
@@ -166,10 +171,11 @@ $script:OmpThemePath = Resolve-OmpThemePath -ThemeName $script:OmpThemeName
 if (-not $script:OmpThemePath) {
     Write-Host "WARNING: Oh My Posh theme '$script:OmpThemeName' not found in any standard location." -ForegroundColor Yellow
     Write-Host "  Searched locations:" -ForegroundColor Yellow
+    Write-Host "    - $env:USERPROFILE\psprofile\" -ForegroundColor DarkGray
     Write-Host "    - `$env:POSH_THEMES_PATH: $env:POSH_THEMES_PATH" -ForegroundColor DarkGray
     Write-Host "    - $env:USERPROFILE\AppData\Local\Programs\oh-my-posh\themes\" -ForegroundColor DarkGray
     Write-Host "    - $env:USERPROFILE\oh-my-posh\themes\" -ForegroundColor DarkGray
-    Write-Host "  To fix: Install oh-my-posh or clone the repo to ~/oh-my-posh/" -ForegroundColor Yellow
+    Write-Host "  To fix: Place theme in ~/psprofile/ or install oh-my-posh" -ForegroundColor Yellow
     $script:OmpEnabled = $false
 }
 
@@ -203,12 +209,17 @@ function Toggle-OhMyPosh {
         omp         # Toggle OMP on/off
     #>
     if ($script:OmpEnabled) {
-        # Deactivate OMP - restore default prompt
+        # Deactivate OMP - restore prompt with venv support
         function global:prompt {
-            "PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) "
+            $venvPrefix = ""
+            if ($env:VIRTUAL_ENV) {
+                $venvName = Split-Path $env:VIRTUAL_ENV -Leaf
+                $venvPrefix = "($venvName) "
+            }
+            "${venvPrefix}PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) "
         }
         $script:OmpEnabled = $false
-        Write-Host "Oh My Posh: OFF (default prompt)" -ForegroundColor Yellow
+        Write-Host "Oh My Posh: OFF (default prompt with venv support)" -ForegroundColor Yellow
     } else {
         # Try to resolve theme path if not already set
         if (-not $script:OmpThemePath) {
