@@ -1,6 +1,6 @@
 # this is my powershell alias file
 # mgua@tomware.it
-# jan 2026 release
+# feb 2026 release
 #
 # may 31 2024:
 #	added la/ga aliases to show alias list
@@ -70,6 +70,19 @@
 #              oo alias adjusted to restore venv prompt
 #
 # feb 10 2026: adjustment to theme from slimfat to slimfat2 with better venv management
+#
+# feb 13 2026: mgua - reworked pinstall (Profile-Install):
+#              - symlink is now the default (git pull updates take effect immediately)
+#              - use -Copy flag for old copy behavior
+#              - installs git post-merge hook to auto Unblock-File after git pull
+#              - unblocks .ps1 files in repo during install
+#              - shows installation plan with confirmation prompt before proceeding
+#              - when OneDrive redirection detected, user chooses target (default: local)
+#              - added -Local / -OneDrive switches to skip the prompt
+#              - symlink failure now suggests enabling Developer Mode
+#              - stale profile detection adapts to chosen location
+#              - UpgradePsProfile also unblocks before sourcing updated profile
+#              - oo alias: venv prompt now rendered in green (matching Activate.ps1)
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -210,13 +223,13 @@ function Toggle-OhMyPosh {
     #>
     if ($script:OmpEnabled) {
         # Deactivate OMP - restore prompt with venv support
+        # Venv prefix is rendered in green via Write-Host (matching Activate.ps1 behavior)
         function global:prompt {
-            $venvPrefix = ""
             if ($env:VIRTUAL_ENV) {
                 $venvName = Split-Path $env:VIRTUAL_ENV -Leaf
-                $venvPrefix = "($venvName) "
+                Write-Host -NoNewline -ForegroundColor Green "($venvName) "
             }
-            "${venvPrefix}PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) "
+            "PS $($executionContext.SessionState.Path.CurrentLocation)$('>' * ($nestedPromptLevel + 1)) "
         }
         $script:OmpEnabled = $false
         Write-Host "Oh My Posh: OFF (default prompt with venv support)" -ForegroundColor Yellow
@@ -490,7 +503,13 @@ function UpgradePsProfile {
 	Write-Host "                  CAUTION: git pull may overwrite local changes not committed"
 	pause "Press ENTER to continue, or CTRL-C to cancel"
 	git add .
-	git pull 
+	git pull
+
+	# Unblock files before sourcing (post-merge hook handles future pulls,
+	# but on first run the hook may not exist yet)
+	Write-Host "Unblocking .ps1 files..." -ForegroundColor Cyan
+	Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Unblock-File -ErrorAction SilentlyContinue
+
 	. .\profile.ps1
 	& pinstall
 }
@@ -499,24 +518,39 @@ function UpgradePsProfile {
 function Profile-Install {
 	<#
 	.SYNOPSIS
-	Installs the profile.ps1 from the current directory to both PowerShell profile locations.
+	Installs psprofile: symlinks profile.ps1 to both PowerShell profile locations,
+	sets up git post-merge hook to auto-unblock files, and unblocks current files.
 	
 	.DESCRIPTION
-	Copies (or optionally symlinks) the profile to:
-	- Windows PowerShell 5.1: <Documents>\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
-	- PowerShell Core 7+: <Documents>\PowerShell\Microsoft.PowerShell_profile.ps1
+	Full psprofile installation:
+	- Unblocks all .ps1 files in the psprofile repo folder
+	- Creates symbolic links from both PS 5.1 and PS 7+ profile paths to profile.ps1
+	  (symlinks mean git pull updates take effect immediately, no reinstall needed)
+	- Installs a git post-merge hook that auto-runs Unblock-File after git pull
+	  (prevents Windows from blocking scripts downloaded via git)
+	- When OneDrive Documents redirection is detected, lets user choose target location
+	  (defaults to local Documents, not OneDrive)
 	
-	Automatically detects OneDrive Documents redirection and installs to the correct location.
+	.PARAMETER Copy
+	If specified, copies the file instead of creating symlinks.
+	With copy mode, you must re-run pinstall after each git pull.
 	
-	.PARAMETER UseSymlink
-	If specified, creates symbolic links instead of copying. Requires admin privileges on Windows.
+	.PARAMETER Local
+	If specified, forces installation to local Documents path (skips OneDrive prompt).
+	
+	.PARAMETER OneDrive
+	If specified, forces installation to OneDrive Documents path (skips prompt).
 	
 	.EXAMPLE
-	pinstall
-	pinstall -UseSymlink
+	pinstall              # Symlink install (recommended)
+	pinstall -Copy        # Copy install (no admin/DevMode needed, but needs re-run after updates)
+	pinstall -Local       # Force local Documents path
+	pinstall -OneDrive    # Force OneDrive Documents path
 	#>
 	param (
-		[switch]$UseSymlink
+		[switch]$Copy,
+		[switch]$Local,
+		[switch]$OneDrive
 	)
 	
 	$currentFolder = Get-Location
@@ -524,112 +558,229 @@ function Profile-Install {
 	
 	if (-not (Test-Path $newProfile)) {
 		Write-Host "Profile source not found: [$newProfile]" -ForegroundColor Red
-		Write-Host "You need to run this command from the folder containing your profile.ps1" -ForegroundColor Yellow
+		Write-Host "Run this command from the psprofile repo folder." -ForegroundColor Yellow
 		return
 	}
 	
-	Write-Host "Source profile found: [$newProfile]" -ForegroundColor Green
+	# Detect Documents locations
+	$oneDriveDocuments = [Environment]::GetFolderPath('MyDocuments')
+	$localDocuments = Join-Path $env:USERPROFILE "Documents"
+	$isOneDriveRedirected = $oneDriveDocuments -ne $localDocuments
 	
-	# Detect actual Documents folder (follows OneDrive redirection)
-	$actualDocuments = [Environment]::GetFolderPath('MyDocuments')
-	$defaultDocuments = Join-Path $env:USERPROFILE "Documents"
-	
-	# Check for OneDrive redirection
-	$isOneDriveRedirected = $actualDocuments -ne $defaultDocuments
+	# Determine target Documents folder
+	$targetDocuments = $localDocuments  # default: local
 	
 	if ($isOneDriveRedirected) {
-		Write-Host ""
-		Write-Host "=" * 70 -ForegroundColor Cyan
-		Write-Host "  OneDrive Documents Redirection Detected" -ForegroundColor Cyan
-		Write-Host "=" * 70 -ForegroundColor Cyan
-		Write-Host ""
-		Write-Host "  Your Documents folder is redirected to OneDrive:" -ForegroundColor Yellow
-		Write-Host "    Default path:  $defaultDocuments" -ForegroundColor Gray
-		Write-Host "    Actual path:   $actualDocuments" -ForegroundColor Green
-		Write-Host ""
-		Write-Host "  PowerShell expects profiles in the OneDrive location." -ForegroundColor Yellow
-		Write-Host "  Installing to: $actualDocuments" -ForegroundColor Green
-		Write-Host ""
-		Write-Host "=" * 70 -ForegroundColor Cyan
-		Write-Host ""
+		if ($OneDrive) {
+			$targetDocuments = $oneDriveDocuments
+		} elseif ($Local) {
+			$targetDocuments = $localDocuments
+		} else {
+			# Interactive choice
+			Write-Host ""
+			Write-Host ("=" * 70) -ForegroundColor Cyan
+			Write-Host "  OneDrive Documents redirection detected" -ForegroundColor Yellow
+			Write-Host ("=" * 70) -ForegroundColor Cyan
+			Write-Host ""
+			Write-Host "  L) Local path:    $localDocuments" -ForegroundColor Green
+			Write-Host "  O) OneDrive path: $oneDriveDocuments" -ForegroundColor Gray
+			Write-Host ""
+			$locChoice = Read-Host "  Install to Local or OneDrive? [L/o]"
+			if ($locChoice -match '^[Oo]') {
+				$targetDocuments = $oneDriveDocuments
+			} else {
+				$targetDocuments = $localDocuments
+			}
+		}
 	}
 	
-	# Define both profile paths using the ACTUAL Documents location
+	# Define both profile paths
 	$profilePaths = @{
-		"Windows PowerShell 5.1" = Join-Path $actualDocuments "WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
-		"PowerShell Core 7+"     = Join-Path $actualDocuments "PowerShell\Microsoft.PowerShell_profile.ps1"
+		"Windows PowerShell 5.1" = Join-Path $targetDocuments "WindowsPowerShell\Microsoft.PowerShell_profile.ps1"
+		"PowerShell Core 7+"     = Join-Path $targetDocuments "PowerShell\Microsoft.PowerShell_profile.ps1"
 	}
+	
+	$installMethod = if ($Copy) { "COPY" } else { "SYMLINK (recommended)" }
+	$hasGitRepo = Test-Path (Join-Path $currentFolder ".git")
+	
+	# === Show installation plan ===
+	Write-Host ""
+	Write-Host ("=" * 70) -ForegroundColor Cyan
+	Write-Host "  psprofile installation plan" -ForegroundColor Cyan
+	Write-Host ("=" * 70) -ForegroundColor Cyan
+	Write-Host ""
+	Write-Host "  Source:  $newProfile" -ForegroundColor Green
+	Write-Host "  Method:  $installMethod" -ForegroundColor Green
+	Write-Host "  Target:  $targetDocuments" -ForegroundColor Green
+	Write-Host ""
+	
+	Write-Host "  Profile targets:" -ForegroundColor Yellow
+	foreach ($psVersion in $profilePaths.Keys) {
+		Write-Host "    [$psVersion]" -ForegroundColor Gray
+		Write-Host "    $($profilePaths[$psVersion])" -ForegroundColor Gray
+	}
+	Write-Host ""
+	
+	Write-Host "  Actions:" -ForegroundColor Yellow
+	Write-Host "    1. Unblock all .ps1 files in repo folder" -ForegroundColor Gray
+	if (-not $Copy) {
+		Write-Host "    2. Create symlinks to profile.ps1 (git pull updates take effect immediately)" -ForegroundColor Gray
+	} else {
+		Write-Host "    2. Copy profile.ps1 (must re-run pinstall after each git pull)" -ForegroundColor Gray
+	}
+	if ($hasGitRepo) {
+		Write-Host "    3. Install git post-merge hook (auto Unblock-File after git pull)" -ForegroundColor Gray
+	}
+	Write-Host ""
+	Write-Host ("=" * 70) -ForegroundColor Cyan
+	Write-Host ""
+	
+	# === Confirmation ===
+	$confirm = Read-Host "Proceed with installation? [Y/n]"
+	if ($confirm -and $confirm -notmatch '^[Yy]') {
+		Write-Host "Installation cancelled." -ForegroundColor Yellow
+		return
+	}
+	
+	# === Step 1: Unblock .ps1 files ===
+	Write-Host ""
+	Write-Host "Step 1: Unblocking .ps1 files..." -ForegroundColor Cyan
+	$unblockedCount = 0
+	Get-ChildItem -Path $currentFolder -Filter "*.ps1" -Recurse | ForEach-Object {
+		Unblock-File -Path $_.FullName -ErrorAction SilentlyContinue
+		$unblockedCount++
+	}
+	Write-Host "  Unblocked $unblockedCount file(s)" -ForegroundColor Green
+	
+	# === Step 2: Install profile to both PS locations ===
+	Write-Host ""
+	Write-Host "Step 2: Installing profile..." -ForegroundColor Cyan
+	$symlinkFailed = $false
 	
 	foreach ($psVersion in $profilePaths.Keys) {
 		$targetProfile = $profilePaths[$psVersion]
 		$targetDir = Split-Path $targetProfile -Parent
 		
-		Write-Host "Processing: $psVersion" -ForegroundColor Cyan
-		Write-Host "  Target: $targetProfile"
+		Write-Host "  $psVersion" -ForegroundColor Cyan
+		Write-Host "    Target: $targetProfile"
 		
 		# Ensure target directory exists
 		if (-not (Test-Path $targetDir)) {
-			Write-Host "  Creating directory: $targetDir" -ForegroundColor Yellow
+			Write-Host "    Creating directory: $targetDir" -ForegroundColor Yellow
 			New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
 		}
 		
 		# Remove existing file/link if present
 		if (Test-Path $targetProfile) {
 			$existingItem = Get-Item $targetProfile -Force
-			if ($existingItem.LinkType) {
-				Write-Host "  Removing existing symlink" -ForegroundColor Yellow
-			} else {
-				Write-Host "  Removing existing file" -ForegroundColor Yellow
-			}
+			$linkInfo = if ($existingItem.LinkType) { "symlink -> $($existingItem.Target)" } else { "file" }
+			Write-Host "    Removing existing $linkInfo" -ForegroundColor Yellow
 			Remove-Item $targetProfile -Force
 		}
 		
-		if ($UseSymlink) {
-			# Create symbolic link (requires admin on Windows)
+		if ($Copy) {
+			Copy-Item $newProfile $targetProfile
+			Write-Host "    Copied successfully" -ForegroundColor Green
+		} else {
 			try {
 				New-Item -ItemType SymbolicLink -Path $targetProfile -Target $newProfile -ErrorAction Stop | Out-Null
-				Write-Host "  Symlink created successfully" -ForegroundColor Green
+				Write-Host "    Symlink created successfully" -ForegroundColor Green
 			} catch {
-				Write-Host "  Failed to create symlink (requires admin privileges)" -ForegroundColor Red
-				Write-Host "  Falling back to copy..." -ForegroundColor Yellow
+				$symlinkFailed = $true
+				Write-Host "    Symlink failed - falling back to copy" -ForegroundColor Red
 				Copy-Item $newProfile $targetProfile
-				Write-Host "  Copied successfully" -ForegroundColor Green
+				Write-Host "    Copied successfully" -ForegroundColor Green
 			}
-		} else {
-			# Copy the file
-			Copy-Item $newProfile $targetProfile
-			Write-Host "  Copied successfully" -ForegroundColor Green
 		}
-		Write-Host ""
 	}
 	
-	# Clean up old profiles in wrong location if OneDrive redirected
+	# Show symlink help if any failed
+	if ($symlinkFailed) {
+		Write-Host ""
+		Write-Host "  Symlink hint: enable Windows Developer Mode to create symlinks without admin:" -ForegroundColor Yellow
+		Write-Host "    Settings > System > For developers > Developer Mode: ON" -ForegroundColor Gray
+		Write-Host "    Then re-run: pinstall" -ForegroundColor Gray
+		Write-Host "    Or run PowerShell as Administrator" -ForegroundColor Gray
+	}
+	
+	# === Step 3: Install git post-merge hook ===
+	if ($hasGitRepo) {
+		Write-Host ""
+		Write-Host "Step 3: Installing git post-merge hook..." -ForegroundColor Cyan
+		$hooksDir = Join-Path $currentFolder ".git\hooks"
+		$hookFile = Join-Path $hooksDir "post-merge"
+		
+		if (-not (Test-Path $hooksDir)) {
+			New-Item -ItemType Directory -Path $hooksDir -Force | Out-Null
+		}
+		
+		# Hook script: unblocks .ps1 files after git merge/pull
+		$hookContent = @"
+#!/bin/sh
+# psprofile: auto-unblock .ps1 files after git pull
+# Installed by: pinstall (Profile-Install)
+powershell.exe -NoProfile -Command "Get-ChildItem -Path '.' -Recurse -Filter '*.ps1' | Unblock-File"
+"@
+		
+		# Check if hook already exists
+		if (Test-Path $hookFile) {
+			$existingHook = Get-Content $hookFile -Raw -ErrorAction SilentlyContinue
+			if ($existingHook -match "psprofile") {
+				Write-Host "    Post-merge hook already installed, updating" -ForegroundColor Yellow
+			} else {
+				Write-Host "    WARNING: existing post-merge hook found (not from psprofile)" -ForegroundColor Red
+				Write-Host "    Backing up to: post-merge.bak" -ForegroundColor Yellow
+				Copy-Item $hookFile "$hookFile.bak"
+			}
+		}
+		
+		Set-Content -Path $hookFile -Value $hookContent -NoNewline -Encoding utf8
+		Write-Host "    Post-merge hook installed" -ForegroundColor Green
+		Write-Host "    Future git pull will auto-unblock .ps1 files" -ForegroundColor Green
+	}
+	
+	# === Step 4: Clean up stale profiles in the OTHER location ===
 	if ($isOneDriveRedirected) {
-		$oldPaths = @(
-			(Join-Path $defaultDocuments "WindowsPowerShell\Microsoft.PowerShell_profile.ps1"),
-			(Join-Path $defaultDocuments "PowerShell\Microsoft.PowerShell_profile.ps1")
+		$otherDocuments = if ($targetDocuments -eq $localDocuments) { $oneDriveDocuments } else { $localDocuments }
+		$otherLabel = if ($targetDocuments -eq $localDocuments) { "OneDrive" } else { "local" }
+		$stalePaths = @(
+			(Join-Path $otherDocuments "WindowsPowerShell\Microsoft.PowerShell_profile.ps1"),
+			(Join-Path $otherDocuments "PowerShell\Microsoft.PowerShell_profile.ps1")
 		)
 		
-		$foundOldProfiles = $false
-		foreach ($oldPath in $oldPaths) {
-			if (Test-Path $oldPath) {
-				if (-not $foundOldProfiles) {
-					Write-Host "Note: Old profile(s) found in non-OneDrive location:" -ForegroundColor Yellow
-					$foundOldProfiles = $true
+		$foundStale = $false
+		foreach ($stalePath in $stalePaths) {
+			if (Test-Path $stalePath) {
+				if (-not $foundStale) {
+					Write-Host ""
+					Write-Host "Note: Profile(s) also found in $otherLabel location:" -ForegroundColor Yellow
+					$foundStale = $true
 				}
-				Write-Host "  $oldPath" -ForegroundColor Gray
+				Write-Host "    $stalePath" -ForegroundColor Gray
 			}
 		}
 		
-		if ($foundOldProfiles) {
-			Write-Host "  These are NOT being used by PowerShell." -ForegroundColor Yellow
-			Write-Host "  You may want to delete them manually." -ForegroundColor Yellow
-			Write-Host ""
+		if ($foundStale) {
+			Write-Host "    These may cause confusion. Consider deleting them." -ForegroundColor Yellow
 		}
 	}
 	
-	Write-Host "Profile installation complete!" -ForegroundColor Green
-	Write-Host "Restart your PowerShell sessions to load the new profile." -ForegroundColor Cyan
+	# === Summary ===
+	Write-Host ""
+	Write-Host ("=" * 70) -ForegroundColor Cyan
+	Write-Host "  Installation complete!" -ForegroundColor Green
+	if (-not $Copy -and -not $symlinkFailed) {
+		Write-Host "  Profile is symlinked: git pull updates take effect immediately." -ForegroundColor Green
+	} elseif (-not $Copy -and $symlinkFailed) {
+		Write-Host "  Profile was copied (symlink failed). Re-run after enabling Developer Mode." -ForegroundColor Yellow
+	} else {
+		Write-Host "  Profile was copied. Re-run pinstall after each git pull." -ForegroundColor Yellow
+	}
+	if ($hasGitRepo) {
+		Write-Host "  Post-merge hook active: .ps1 files auto-unblocked after git pull." -ForegroundColor Green
+	}
+	Write-Host "  Restart PowerShell sessions to load the new profile." -ForegroundColor Cyan
+	Write-Host ("=" * 70) -ForegroundColor Cyan
 }
 
 
@@ -1426,7 +1577,7 @@ function Get-GitStatus {
 }
 
 
-Set-Alias -Name pinstall -Value Profile-Install -Description "Get Install Instructions"
+Set-Alias -Name pinstall -Value Profile-Install -Description "Install psprofile (symlink + git hook + unblock)"
 Set-Alias -Name la -Value Get-Alias -Description "List command Aliases defined in Powershell"
 Set-Alias -Name ga -Value Get-Alias -Description "List command Aliases defined in Powershell"
 Set-Alias -Name hed -Value Admin-Edit-Hosts -Description "Edit hosts file in admin mode"
