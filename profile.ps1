@@ -84,6 +84,11 @@
 #              - UpgradePsProfile also unblocks before sourcing updated profile
 #              - oo alias: venv prompt now rendered in green (matching Activate.ps1)
 #
+# mar 05 2026: mgua + claude: debug a subtle error happening at first installs, in some 
+#			   circumstances. [Environment]::GetFolderPath('MyDocuments') can return an 
+#			   empty string in some environments (non-standard shell context, certain 
+#			   corporate setups, etc.)
+#
 # see https://github.com/mgua/psprofile.git
 #
 # save it in the file name specified by the $PROFILE variable
@@ -565,7 +570,7 @@ function Profile-Install {
 	# Detect Documents locations
 	$oneDriveDocuments = [Environment]::GetFolderPath('MyDocuments')
 	$localDocuments = Join-Path $env:USERPROFILE "Documents"
-	$isOneDriveRedirected = $oneDriveDocuments -ne $localDocuments
+	$isOneDriveRedirected = (-not [string]::IsNullOrEmpty($oneDriveDocuments)) -and ($oneDriveDocuments -ne $localDocuments)
 	
 	# Determine target Documents folder
 	$targetDocuments = $localDocuments  # default: local
@@ -743,6 +748,9 @@ powershell.exe -NoProfile -Command "Get-ChildItem -Path '.' -Recurse -Filter '*.
 	if ($isOneDriveRedirected) {
 		$otherDocuments = if ($targetDocuments -eq $localDocuments) { $oneDriveDocuments } else { $localDocuments }
 		$otherLabel = if ($targetDocuments -eq $localDocuments) { "OneDrive" } else { "local" }
+		if ([string]::IsNullOrEmpty($otherDocuments)) {
+			Write-Host "  (skipping stale profile check: secondary Documents path unavailable)" -ForegroundColor DarkGray
+		} else {
 		$stalePaths = @(
 			(Join-Path $otherDocuments "WindowsPowerShell\Microsoft.PowerShell_profile.ps1"),
 			(Join-Path $otherDocuments "PowerShell\Microsoft.PowerShell_profile.ps1")
@@ -763,6 +771,7 @@ powershell.exe -NoProfile -Command "Get-ChildItem -Path '.' -Recurse -Filter '*.
 		if ($foundStale) {
 			Write-Host "    These may cause confusion. Consider deleting them." -ForegroundColor Yellow
 		}
+		} # end else (otherDocuments not empty)
 	}
 	
 	# === Summary ===
