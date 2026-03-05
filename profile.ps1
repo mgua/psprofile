@@ -88,6 +88,7 @@
 #			   circumstances. [Environment]::GetFolderPath('MyDocuments') can return an 
 #			   empty string in some environments (non-standard shell context, certain 
 #			   corporate setups, etc.)
+#			   fixed an error in rendering menus with over 20 items
 #
 # see https://github.com/mgua/psprofile.git
 #
@@ -309,40 +310,62 @@ function DrawMenu { param ([array]$menuItems, $menuPosition, $menuTitle)
 
     $menuwidth = $menuTitle.length + 4
     Write-Host "`t" -NoNewLine;    Write-Host ("=" * $menuwidth) -fore $fcolor -back $bcolor
-    Write-Host "`t" -NoNewLine;    Write-Host " $menuTitel " -fore $fcolor -back $bcolor
+    Write-Host "`t" -NoNewLine;    Write-Host " $menuTitle " -fore $fcolor -back $bcolor   # fixed: was $menuTitel (typo)
     Write-Host "`t" -NoNewLine;    Write-Host ("=" * $menuwidth) -fore $fcolor -back $bcolor
     Write-Host ""
-    for ($i = 0; $i -le $menuItems.length;$i++) {
+    for ($i = 0; $i -lt $menuItems.Count; $i++) {   # fixed: was -le .length (off-by-one)
         Write-Host "`t" -NoNewLine
         if ($i -eq $menuPosition) {
             Write-Host "$i. $($menuItems[$i])" -fore $bcolor -back $fcolor -NoNewline
             Write-Host "" -fore $fcolor -back $bcolor
         } else {
-           if ($($menuItems[$i])) {
             Write-Host "$i. $($menuItems[$i])" -fore $fcolor -back $bcolor
-           } 
         }
     }
-    # leading new line
     Write-Host ""
 }
 
 function Menu { param ([array]$menuItems, $menuTitle = "MENU")
-    $vkeycode = 0
+    # Robust menu: records start position BEFORE drawing, then uses full redraw
+    # on each keypress.  Avoids the old partial-redraw cursor-math which broke
+    # when the menu was taller than the visible viewport (e.g. 20+ venv items).
+    # Returns the selected index, or -1 if the user pressed Escape.
+    if ($menuItems.Count -eq 0) { return -1 }
+
     $pos = 0
-    $oldPos = 0
+    # $menuLines = header(3) + blank(1) + items(N) + trailing-blank(1) = N + 5
+    $menuLines = $menuItems.Count + 5
+
+    $oldCursorVisible = [Console]::CursorVisible
+    [Console]::CursorVisible = $false
+
     DrawMenu $menuItems $pos $menuTitle
-    $currPos=$host.UI.RawUI.CursorPosition
-    While ($vkeycode -ne 13) {
-        $press = $host.ui.rawui.readkey("NoEcho,IncludeKeyDown")
-        $vkeycode = $press.virtualkeycode
-        Write-host "$($press.character)" -NoNewLine
-        $oldPos=$pos;
-        If ($vkeycode -eq 38) {$pos--}
-        If ($vkeycode -eq 40) {$pos++}
-        if ($pos -lt 0) {$pos = 0}
-        if ($pos -ge $menuItems.length) {$pos = $menuItems.length -1}
-        RedrawMenuItems $menuItems $oldPos $pos $currPos
+    # Cursor is now exactly $menuLines below where the menu started.
+
+    $vkeycode = 0
+    while ($vkeycode -ne 13) {                          # 13 = Enter
+        $press = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        $vkeycode = $press.VirtualKeyCode
+        if ($vkeycode -eq 27) { break }                 # 27 = Escape: cancel
+
+        $oldPos = $pos
+        if ($vkeycode -eq 38 -and $pos -gt 0)                      { $pos-- }   # Up arrow
+        if ($vkeycode -eq 40 -and $pos -lt ($menuItems.Count - 1)) { $pos++ }   # Down arrow
+
+        if ($pos -ne $oldPos) {
+            # Move cursor back to the top of the menu using buffer-consistent
+            # [Console] API (avoids getter/setter mismatch in Windows Terminal).
+            $topY = [Console]::CursorTop - $menuLines
+            if ($topY -lt 0) { $topY = 0 }
+            [Console]::SetCursorPosition(0, $topY)
+            DrawMenu $menuItems $pos $menuTitle
+        }
+    }
+
+    [Console]::CursorVisible = $oldCursorVisible
+    if ($vkeycode -eq 27) {
+        Write-Host ""
+        return -1
     }
     Write-Output $pos
 }
@@ -944,6 +967,7 @@ function Select-Identity {
     
     # Use the Menu function for selection
     $selection = Menu $validIdentities "Select Identity"
+    if ($selection -lt 0) { return }   # Escape pressed
     $selectedId = $validIdentities[$selection]
     
     Write-Host ""
@@ -1330,6 +1354,7 @@ function Select-VirtualEnvironment {
     Write-Host ""
     Write-Host "Virtual Environments in $env:USERPROFILE" -ForegroundColor Cyan
     $selection = Menu $venvFolders "Select Environment"
+    if ($selection -lt 0) { return }   # Escape pressed
 
     # Get the selected folder name
     $selectedEnv = $venvFolders[$selection]
@@ -1370,6 +1395,7 @@ function Select-VirtualEnvironmentCd {
     Write-Host ""
     Write-Host "Virtual Environments venv_* in $env:USERPROFILE" -ForegroundColor Cyan
     $selection = Menu $venvFolders "Select Environment"
+    if ($selection -lt 0) { return }   # Escape pressed
 
     # Get the selected folder name (venv_<envname>)
     $selectedEnv = $venvFolders[$selection]
